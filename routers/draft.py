@@ -11,7 +11,7 @@ router = APIRouter()
 templates = Jinja2Templates(directory="templates")
 
 PARTICIPANTS = [u for u, d in USERS.items() if not d.get("is_admin")]
-TIMEOUT_SECONDS = 60
+TIMEOUT_SECONDS = 30
 
 
 def snake_order(draft_order):
