@@ -3,17 +3,45 @@
 {% block content %}
 
 {% if not draft_configured %}
-<!-- Draft not configured -->
 <div class="alert alert-warning text-center py-4">
-  <h5 class="fw-bold">⏳ El draft aún no ha sido configurado</h5>
-  <p class="mb-0">El administrador debe realizar el sorteo del orden antes de comenzar.</p>
+  <h5 class="fw-bold">⏳ El draft no ha sido configurado</h5>
+  <p class="mb-1">El administrador debe definir el orden antes de comenzar.</p>
   {% if user.is_admin %}
-  <a href="/admin/draft-order" class="btn btn-dark mt-3">⚙ Configurar sorteo</a>
+  <a href="/admin/draft-order" class="btn btn-dark mt-2">⚙ Configurar orden</a>
   {% endif %}
 </div>
 
+{% elif not draft_started and not draft_done %}
+<div class="alert alert-info text-center py-4">
+  <h5 class="fw-bold">🎯 El draft está listo para comenzar</h5>
+  <p class="mb-1">En cuanto el administrador presione <strong>Iniciar Draft</strong>, el primer participante tendrá {{ timeout }} segundos para elegir.</p>
+  {% if user.is_admin %}
+  <form method="post" action="/admin/draft-start" class="mt-3">
+    <button class="btn btn-success btn-lg">▶ Iniciar Draft</button>
+  </form>
+  {% else %}
+  <p class="text-muted small mt-2">Espera a que el administrador inicie el draft.</p>
+  {% endif %}
+</div>
+<!-- Still show order -->
+{% if order_display %}
+<div class="card mt-3">
+  <div class="card-header fw-bold py-2">Orden del draft</div>
+  <div class="card-body py-2">
+    <div class="row g-1">
+      {% for o in order_display %}
+      <div class="col-6 col-md-4 col-lg-3">
+        <div class="px-2 py-1 rounded {% if o.is_current %}bg-light border{% endif %}">
+          <span class="fw-bold text-muted me-2">{{ o.orden }}</span>{{ o.nombre }}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
 {% elif draft_done %}
-<!-- Draft complete -->
 <div class="alert alert-success text-center py-3">
   <h5 class="fw-bold mb-0">✅ Draft completado — 48 picks realizados</h5>
 </div>
@@ -21,68 +49,72 @@
 {% else %}
 <!-- Active draft -->
 
-<!-- Banner: my turn or waiting -->
+<!-- Timer + turn banner -->
 {% if is_my_turn %}
 <div class="alert alert-success d-flex justify-content-between align-items-center py-2 mb-3">
   <div>
-    <strong>🎯 ¡Es tu turno!</strong> &nbsp;·&nbsp;
-    Pick #{{ current_pick }} &nbsp;·&nbsp; Ronda {{ ronda_actual }}
+    <strong>🎯 ¡Es tu turno!</strong> &nbsp;·&nbsp; Pick #{{ current_pick }} &nbsp;·&nbsp; Ronda {{ ronda_actual }}
   </div>
-  <span class="badge bg-success fs-6">Bombo {{ ["A","B","C","D"][ronda_actual-1] }} (referencia)</span>
+  <div class="d-flex align-items-center gap-2">
+    <div id="timer" class="fw-bold fs-5 {% if seconds_remaining and seconds_remaining <= 15 %}text-danger{% else %}text-white{% endif %}">
+      {{ seconds_remaining }}s
+    </div>
+    <div class="progress" style="width:80px;height:8px">
+      <div id="timer-bar" class="progress-bar bg-success" style="width:{{ (seconds_remaining / timeout * 100)|int }}%"></div>
+    </div>
+  </div>
 </div>
 {% else %}
 <div class="alert alert-secondary d-flex justify-content-between align-items-center py-2 mb-3">
-  <div>
-    ⏳ Turno de <strong>{{ current_participant_nombre }}</strong> &nbsp;·&nbsp;
-    Pick #{{ current_pick }} &nbsp;·&nbsp; Ronda {{ ronda_actual }}
+  <div>⏳ Turno de <strong>{{ current_participant_nombre }}</strong> &nbsp;·&nbsp; Pick #{{ current_pick }}</div>
+  <div class="d-flex align-items-center gap-2">
+    <span class="text-muted small">{{ seconds_remaining }}s restantes</span>
+    <span class="text-muted small">· {{ 48 - total_picks }} picks por hacer</span>
   </div>
-  <span class="text-muted small">{{ 48 - total_picks }} picks restantes</span>
 </div>
 {% endif %}
 
 {% endif %}
 
+{% if draft_started or draft_done %}
 <div class="row">
-  <!-- Left: team selector -->
+  <!-- Team list -->
   <div class="col-md-5">
     <div class="card">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <span class="fw-bold">Selecciones disponibles</span>
+      <div class="card-header d-flex justify-content-between align-items-center py-2">
+        <span class="fw-bold small">Equipos disponibles</span>
         <div class="btn-group btn-group-sm">
           {% for b in ["Todos","A","B","C","D"] %}
-          <button class="btn btn-outline-dark bombo-btn" data-bombo="{{ b }}">{{ b }}</button>
+          <button class="btn btn-outline-dark btn-sm bombo-btn {% if b == 'Todos' %}active btn-dark{% endif %}" data-bombo="{{ b }}">{{ b }}</button>
           {% endfor %}
         </div>
       </div>
-      <div style="max-height:70vh;overflow-y:auto">
+      <div style="max-height:65vh;overflow-y:auto">
         {% for t in teams %}
-        <div class="team-row d-flex align-items-center px-3 py-2 border-bottom
-          {% if t.taken %}bg-light text-muted{% endif %}"
-          data-bombo="{{ t.bombo }}">
-          <div style="width:32px">
-            {% if t.flag_url %}<img src="{{ t.flag_url }}" width="24" height="18">{% endif %}
+        <div class="team-row d-flex align-items-center px-2 py-1 border-bottom
+          {% if t.taken %}bg-light{% endif %}" data-bombo="{{ t.bombo }}">
+          <div style="width:28px">
+            {% if t.flag_url %}<img src="{{ t.flag_url }}" width="22" height="16">{% endif %}
           </div>
-          <div class="flex-grow-1 ms-2">
-            <span class="fw-semibold small">{{ t.nombre }}</span>
+          <div class="flex-grow-1 ms-1">
+            <span class="small {% if t.taken %}text-muted{% else %}fw-semibold{% endif %}">{{ t.nombre }}</span>
             <span class="badge ms-1
               {% if t.bombo == 'A' %}bg-success
               {% elif t.bombo == 'B' %}bg-warning text-dark
               {% elif t.bombo == 'C' %}bg-orange
-              {% else %}bg-danger{% endif %}" style="font-size:0.6rem">
-              {{ t.bombo }}
-            </span>
-            <span class="text-muted ms-1" style="font-size:0.7rem">Gr.{{ t.grupo }}</span>
+              {% else %}bg-danger{% endif %}" style="font-size:0.55rem">{{ t.bombo }}</span>
+            <span class="text-muted" style="font-size:0.65rem"> Gr.{{ t.grupo }}</span>
           </div>
-          <div>
+          <div class="ms-1">
             {% if t.taken %}
-              <span class="badge bg-secondary">Elegido</span>
+              <span class="badge bg-secondary" style="font-size:0.6rem">Elegido</span>
             {% elif is_my_turn %}
               <form method="post" action="/draft/pick" style="display:inline">
                 <input type="hidden" name="team_nombre" value="{{ t.nombre }}">
-                <button class="btn btn-sm btn-success">Elegir</button>
+                <button class="btn btn-success btn-sm py-0 px-2" style="font-size:0.75rem">Elegir</button>
               </form>
             {% else %}
-              <span class="text-muted small">{{ t.pts_victoria }}pts/V</span>
+              <span class="text-muted" style="font-size:0.65rem">{{ t.pts_victoria }}pts/V</span>
             {% endif %}
           </div>
         </div>
@@ -91,23 +123,19 @@
     </div>
   </div>
 
-  <!-- Right: pick log + my teams + order -->
+  <!-- Right panel -->
   <div class="col-md-7">
 
-    <!-- My current picks -->
+    <!-- My teams -->
     {% if my_teams_by_bombo %}
-    <div class="card mb-3">
-      <div class="card-header fw-bold py-2">Mis equipos</div>
+    <div class="card mb-2">
+      <div class="card-header fw-bold py-1 small">Mis equipos</div>
       <div class="card-body py-2">
-        <div class="row g-2">
+        <div class="row g-2 text-center">
           {% for bombo in ["A","B","C","D"] %}
-          <div class="col-3 text-center">
+          <div class="col-3">
             <div class="small text-muted">Bombo {{ bombo }}</div>
-            {% if my_teams_by_bombo.get(bombo) %}
-            <div class="fw-semibold small">{{ my_teams_by_bombo[bombo] }}</div>
-            {% else %}
-            <div class="text-muted small">—</div>
-            {% endif %}
+            <div class="fw-semibold small">{{ my_teams_by_bombo.get(bombo, "—") }}</div>
           </div>
           {% endfor %}
         </div>
@@ -115,19 +143,19 @@
     </div>
     {% endif %}
 
-    <!-- Pick history -->
-    <div class="card mb-3">
-      <div class="card-header d-flex justify-content-between fw-bold py-2">
-        <span>Historial de picks</span>
-        <span class="text-muted fw-normal small">{{ total_picks }}/48</span>
+    <!-- Pick log -->
+    <div class="card mb-2">
+      <div class="card-header d-flex justify-content-between py-1">
+        <span class="fw-bold small">Historial</span>
+        <span class="text-muted small">{{ total_picks }}/48</span>
       </div>
-      <div style="max-height:35vh;overflow-y:auto">
-        <table class="table table-sm mb-0 small">
+      <div style="max-height:30vh;overflow-y:auto">
+        <table class="table table-sm mb-0" style="font-size:0.78rem">
           <thead class="table-dark sticky-top">
-            <tr><th>#</th><th>Rnd</th><th>Participante</th><th>Equipo</th><th>Bombo</th><th></th></tr>
+            <tr><th>#</th><th>Rnd</th><th>Participante</th><th>Equipo</th><th>B</th></tr>
           </thead>
           <tbody>
-          {% for p in picks | reverse %}
+          {% for p in picks %}
           <tr class="{% if p.group_conflict and not p.exception_authorized %}table-danger
                       {% elif p.group_conflict and p.exception_authorized %}table-warning
                       {% else %}table-success{% endif %}">
@@ -135,21 +163,14 @@
             <td>{{ p.ronda }}</td>
             <td>{{ p.nombre }}</td>
             <td>
-              {% if p.flag_url %}<img src="{{ p.flag_url }}" width="16" height="12" class="me-1">{% endif %}
+              {% if p.flag_url %}<img src="{{ p.flag_url }}" width="14" height="10" class="me-1">{% endif %}
               {{ p.team_nombre }}
             </td>
             <td><span class="badge
               {% if p.bombo == 'A' %}bg-success
               {% elif p.bombo == 'B' %}bg-warning text-dark
               {% elif p.bombo == 'C' %}bg-orange
-              {% else %}bg-danger{% endif %}">{{ p.bombo }}</span>
-            </td>
-            <td>
-              {% if p.group_conflict and not p.exception_authorized and user.is_admin %}
-              <form method="post" action="/draft/exception/{{ p.id }}" style="display:inline">
-                <button class="btn btn-xs btn-warning py-0">✓</button>
-              </form>
-              {% endif %}
+              {% else %}bg-danger{% endif %}" style="font-size:0.55rem">{{ p.bombo }}</span>
             </td>
           </tr>
           {% endfor %}
@@ -158,17 +179,19 @@
       </div>
     </div>
 
-    <!-- Draft order -->
-    {% if order_display %}
+    <!-- Order + admin controls -->
     <div class="card">
-      <div class="card-header fw-bold py-2 d-flex justify-content-between">
-        <span>Orden del draft</span>
+      <div class="card-header d-flex justify-content-between py-1">
+        <span class="fw-bold small">Orden del draft</span>
         {% if user.is_admin %}
-        <div class="d-flex gap-2">
+        <div class="d-flex gap-1">
           <form method="post" action="/draft/undo">
-            <button class="btn btn-xs btn-outline-warning py-0">↩ Deshacer último</button>
+            <button class="btn btn-outline-warning py-0 px-2" style="font-size:0.7rem">↩ Deshacer</button>
           </form>
-          <a href="/admin/draft-order" class="btn btn-xs btn-outline-secondary py-0">Editar</a>
+          <form method="post" action="/admin/draft-reset"
+                onsubmit="return confirm('¿Reiniciar el draft? Se borran todos los picks.')">
+            <button class="btn btn-outline-danger py-0 px-2" style="font-size:0.7rem">🗑 Reiniciar</button>
+          </form>
         </div>
         {% endif %}
       </div>
@@ -176,11 +199,11 @@
         <div class="row g-1">
           {% for o in order_display %}
           <div class="col-6 col-md-4">
-            <div class="d-flex align-items-center gap-2 px-2 py-1 rounded
-              {% if o.username == current_participant %}bg-success text-white
+            <div class="d-flex align-items-center gap-1 px-2 py-1 rounded small
+              {% if o.username == current_participant %}bg-success text-white fw-bold
               {% elif o.is_current %}bg-light border{% endif %}">
-              <span class="fw-bold" style="width:20px">{{ o.orden }}</span>
-              <span class="small">{{ o.nombre }}</span>
+              <span style="width:16px">{{ o.orden }}</span>
+              <span>{{ o.nombre }}</span>
               {% if o.username == current_participant %}<span class="ms-auto">🎯</span>{% endif %}
             </div>
           </div>
@@ -188,26 +211,54 @@
         </div>
       </div>
     </div>
-    {% endif %}
 
   </div>
 </div>
+{% endif %}
 
 {% block scripts %}
 <script>
+// Bombo filter
 document.querySelectorAll('.bombo-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     const bombo = btn.dataset.bombo;
     document.querySelectorAll('.team-row').forEach(row => {
       row.style.display = (bombo === 'Todos' || row.dataset.bombo === bombo) ? '' : 'none';
     });
-    document.querySelectorAll('.bombo-btn').forEach(b => b.classList.remove('active','btn-dark'));
+    document.querySelectorAll('.bombo-btn').forEach(b => {
+      b.classList.remove('active','btn-dark');
+      b.classList.add('btn-outline-dark');
+    });
     btn.classList.add('active','btn-dark');
+    btn.classList.remove('btn-outline-dark');
   });
 });
-// Auto-refresh every 15 seconds if draft is active
-{% if not draft_done and draft_configured %}
-setTimeout(() => location.reload(), 15000);
+
+{% if draft_started and not draft_done and seconds_remaining is not none %}
+// Countdown timer
+let secs = {{ seconds_remaining }};
+const timeout = {{ timeout }};
+const timerEl = document.getElementById('timer');
+const barEl = document.getElementById('timer-bar');
+
+const tick = setInterval(() => {
+  secs--;
+  if (timerEl) {
+    timerEl.textContent = secs + 's';
+    if (secs <= 15) timerEl.classList.add('text-danger');
+  }
+  if (barEl) {
+    barEl.style.width = Math.max(0, (secs / timeout * 100)) + '%';
+    if (secs <= 15) { barEl.classList.remove('bg-success'); barEl.classList.add('bg-danger'); }
+  }
+  if (secs <= 0) {
+    clearInterval(tick);
+    location.reload();
+  }
+}, 1000);
+
+// Auto-refresh every 5s to catch other people's picks
+setInterval(() => location.reload(), 5000);
 {% endif %}
 </script>
 {% endblock %}

@@ -66,3 +66,6 @@ alter table profiles disable row level security;
 alter table teams disable row level security;
 alter table matches disable row level security;
 alter table picks disable row level security;
+
+-- Draft state table
+ALTER TABLE draft_config ADD COLUMN IF NOT EXISTS draft_started boolean default false;

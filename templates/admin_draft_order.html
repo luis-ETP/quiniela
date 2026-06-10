@@ -3,10 +3,13 @@
 {% block content %}
 
 <h4 class="fw-bold mb-4">⚙ Orden del Draft</h4>
-<p class="text-muted">Asigna el orden del 1 al 12. El draft será snake (1→12, 12→1, 1→12, 12→1).</p>
+
+{% if draft_started %}
+<div class="alert alert-warning">⚠ El draft ya está en curso. Editar el orden no afectará los picks ya realizados.</div>
+{% endif %}
 
 <form method="post" action="/admin/draft-order">
-  <div class="row g-2">
+  <div class="row g-2 mb-3">
     {% for i in range(1, 13) %}
     <div class="col-md-4 col-lg-3">
       <label class="form-label small fw-bold">Posición {{ i }}</label>
@@ -22,18 +25,30 @@
     </div>
     {% endfor %}
   </div>
-  <button type="submit" class="btn btn-dark mt-3">Guardar orden</button>
-  <a href="/draft" class="btn btn-outline-secondary mt-3 ms-2">← Volver</a>
+  <button type="submit" class="btn btn-dark">Guardar orden</button>
+  <a href="/draft" class="btn btn-outline-secondary ms-2">← Volver</a>
 </form>
 
+{% if draft_configured and not draft_started %}
+<hr>
+<div class="card border-success mt-3">
+  <div class="card-body text-center py-4">
+    <h5 class="fw-bold">¿Listo para comenzar?</h5>
+    <p class="text-muted">El primer participante tendrá 60 segundos para elegir. Si no elige a tiempo, se auto-selecciona el mejor equipo disponible.</p>
+    <form method="post" action="/admin/draft-start">
+      <button class="btn btn-success btn-lg">▶ Iniciar Draft</button>
+    </form>
+  </div>
+</div>
+{% endif %}
+
 {% if draft_configured %}
-<div class="card border-danger mt-4">
+<div class="card border-danger mt-3">
   <div class="card-header fw-bold text-danger">Zona de peligro</div>
   <div class="card-body">
-    <p class="text-muted small">Borra todos los picks y reinicia el draft desde cero.</p>
     <form method="post" action="/admin/draft-reset"
-          onsubmit="return confirm('¿Seguro? Esto borra todos los picks.')">
-      <button class="btn btn-outline-danger btn-sm">🗑 Reiniciar draft</button>
+          onsubmit="return confirm('¿Reiniciar? Se borran todos los picks.')">
+      <button class="btn btn-outline-danger btn-sm">🗑 Reiniciar draft completo</button>
     </form>
   </div>
 </div>
