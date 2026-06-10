@@ -1,6 +1,7 @@
 import os
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 from routers import auth, draft, standings, matches
 from routers.my_teams import router as my_teams_router
@@ -15,6 +16,11 @@ app.add_middleware(
 )
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# Add enumerate to Jinja2
+templates = Jinja2Templates(directory="templates")
+templates.env.globals["enumerate"] = enumerate
+
 app.include_router(auth.router)
 app.include_router(draft.router)
 app.include_router(standings.router)
