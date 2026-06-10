@@ -240,6 +240,7 @@ let secs = {{ seconds_remaining }};
 const timeout = {{ timeout }};
 const timerEl = document.getElementById('timer');
 const barEl = document.getElementById('timer-bar');
+let autoPickFired = false;
 
 const tick = setInterval(() => {
   secs--;
@@ -251,14 +252,16 @@ const tick = setInterval(() => {
     barEl.style.width = Math.max(0, (secs / timeout * 100)) + '%';
     if (secs <= 15) { barEl.classList.remove('bg-success'); barEl.classList.add('bg-danger'); }
   }
-  if (secs <= 0) {
+  if (secs <= 0 && !autoPickFired) {
+    autoPickFired = true;
     clearInterval(tick);
-    location.reload();
+    fetch('/draft/auto-pick', {method: 'POST'})
+      .then(() => location.reload());
   }
 }, 1000);
 
 // Auto-refresh every 5s to catch other people's picks
-setInterval(() => location.reload(), 5000);
+setInterval(() => { if (!autoPickFired) location.reload(); }, 5000);
 {% endif %}
 </script>
 {% endblock %}

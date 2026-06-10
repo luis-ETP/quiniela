@@ -96,11 +96,6 @@ async def draft_page(request: Request):
 
     picks, draft_order, picked_teams, current_pick, current_participant, ronda_actual, started, pick_started_at = get_draft_state()
 
-    # Check auto-pick timeout
-    if started and current_pick <= 48:
-        if check_and_auto_pick(picks, draft_order, picked_teams, current_pick, current_participant, ronda_actual, pick_started_at):
-            return RedirectResponse("/draft", status_code=302)
-
     is_my_turn = started and current_participant == user["username"]
     draft_configured = len(draft_order) == 12
     draft_done = current_pick > 48
@@ -248,3 +243,14 @@ async def save_draft_order(request: Request):
         if uname:
             execute("INSERT INTO draft_config (username, orden) VALUES (%s, %s)", (uname, i))
     return RedirectResponse("/admin/draft-order", status_code=302)
+
+
+@router.post("/draft/auto-pick")
+async def trigger_auto_pick(request: Request):
+    """Called by JS when timer hits zero."""
+    from fastapi.responses import JSONResponse
+    picks, draft_order, picked_teams, current_pick, current_participant, ronda_actual, started, pick_started_at = get_draft_state()
+    if not started or current_pick > 48 or not current_participant:
+        return JSONResponse({"status": "noop"})
+    did_pick = check_and_auto_pick(picks, draft_order, picked_teams, current_pick, current_participant, ronda_actual, pick_started_at)
+    return JSONResponse({"status": "picked" if did_pick else "noop"})
