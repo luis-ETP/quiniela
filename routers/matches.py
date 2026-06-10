@@ -198,3 +198,28 @@ async def sync_results_get(request: Request):
         return RedirectResponse("/login", status_code=302)
     await _sync_results()
     return RedirectResponse("/matches", status_code=302)
+
+
+@router.get("/admin/api-check")
+async def api_check(request: Request):
+    from fastapi.responses import JSONResponse
+    user = get_current_user(request)
+    if not user or not user.get("is_admin"):
+        return RedirectResponse("/login", status_code=302)
+    api_key = os.environ.get("FOOTBALL_API_KEY", "")
+    async with httpx.AsyncClient(timeout=10) as client:
+        # Check available competitions
+        r1 = await client.get(
+            "https://api.football-data.org/v4/competitions",
+            headers={"X-Auth-Token": api_key},
+        )
+        # Check WC matches
+        r2 = await client.get(
+            "https://api.football-data.org/v4/competitions/WC/matches",
+            headers={"X-Auth-Token": api_key},
+        )
+        return JSONResponse({
+            "competitions_status": r1.status_code,
+            "wc_matches_status": r2.status_code,
+            "wc_response_preview": r2.text[:500],
+        })
