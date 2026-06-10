@@ -4,7 +4,7 @@ from fastapi.templating import Jinja2Templates
 from auth import get_current_user
 from database import query, execute
 from data import MATCHES_BY_NUM, TEAMS
-from flags import normalize, flag
+from flags import normalize, flag_url
 import httpx, os
 
 router = APIRouter()
@@ -45,8 +45,8 @@ async def matches_page(request: Request, phase: str = "Grupos"):
                 continue
             mc = m.copy()
             mc["resultado"] = results_by_num.get(m["numero"])
-            mc["flag_local"] = flag(m["local"])
-            mc["flag_visitante"] = flag(m["visitante"])
+            mc["flag_local"] = flag_url(m["local"])
+            mc["flag_visitante"] = flag_url(m["visitante"])
             match_list.append(mc)
     else:
         # Knockout: get from results table
@@ -104,8 +104,8 @@ async def bracket_page(request: Request):
     # Add flags
     for phase_matches in bracket.values():
         for m in phase_matches:
-            m["flag_local"] = flag(m.get("local", ""))
-            m["flag_visitante"] = flag(m.get("visitante", ""))
+            m["flag_local"] = flag_url(m.get("local", ""))
+            m["flag_visitante"] = flag_url(m.get("visitante", ""))
 
     return templates.TemplateResponse("bracket.html", {
         "request": request,
