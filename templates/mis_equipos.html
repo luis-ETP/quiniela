@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}Mis Equipos — Quiniela 2026{% endblock %}
+{% block content %}
+
+<h4 class="fw-bold mb-4">⭐ Mis Equipos</h4>
+
+{% if not picks %}
+<div class="alert alert-info">
+  Aún no tienes equipos asignados. El draft no ha comenzado.
+</div>
+{% else %}
+<div class="row g-3 mb-4">
+  {% for bombo in ["A","B","C","D"] %}
+    {% set t = picks_by_bombo.get(bombo) %}
+    <div class="col-md-6 col-lg-3">
+      <div class="card h-100 border-2
+        {% if bombo == 'A' %}border-success
+        {% elif bombo == 'B' %}border-warning
+        {% elif bombo == 'C' %}border-orange
+        {% else %}border-danger{% endif %}">
+        <div class="card-header py-1 small fw-bold
+          {% if bombo == 'A' %}bg-success text-white
+          {% elif bombo == 'B' %}bg-warning text-dark
+          {% elif bombo == 'C' %}bg-orange text-white
+          {% else %}bg-danger text-white{% endif %}">
+          Bombo {{ bombo }}
+          <span class="float-end">
+            {% if bombo == 'A' %}1 pt/V · 0.5/E
+            {% elif bombo == 'B' %}1.5 pt/V · 0.75/E
+            {% elif bombo == 'C' %}2 pt/V · 1/E
+            {% else %}3 pt/V · 1.5/E{% endif %}
+          </span>
+        </div>
+        <div class="card-body text-center py-3">
+          {% if t %}
+            {% if t.flag_url %}<img src="{{ t.flag_url }}" width="48" height="36" class="mb-2">{% endif %}
+            <div class="fw-bold fs-5">{{ t.nombre }}</div>
+            <div class="text-muted small">Grupo {{ t.grupo }} · FIFA #{{ t.ranking_fifa }}</div>
+            <hr class="my-2">
+            <div class="row text-center">
+              <div class="col-4">
+                <div class="fw-bold fs-5">{{ t.victorias }}</div>
+                <div class="text-muted" style="font-size:0.7rem">Victorias</div>
+              </div>
+              <div class="col-4">
+                <div class="fw-bold fs-5">{{ t.empates }}</div>
+                <div class="text-muted" style="font-size:0.7rem">Empates</div>
+              </div>
+              <div class="col-4">
+                <div class="fw-bold fs-5 text-success">{{ "%.1f"|format(t.pts) }}</div>
+                <div class="text-muted" style="font-size:0.7rem">Puntos</div>
+              </div>
+            </div>
+          {% else %}
+            <div class="text-muted py-3">Sin asignar</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  {% endfor %}
+</div>
+
+<!-- Summary -->
+{% if picks %}
+<div class="card">
+  <div class="card-body">
+    <div class="row text-center">
+      <div class="col-3">
+        <div class="fw-bold fs-4">{{ total_victorias }}</div>
+        <div class="text-muted small">Victorias totales</div>
+      </div>
+      <div class="col-3">
+        <div class="fw-bold fs-4">{{ total_empates }}</div>
+        <div class="text-muted small">Empates totales</div>
+      </div>
+      <div class="col-3">
+        <div class="fw-bold fs-4 text-success">{{ "%.2f"|format(pts_cd) }}</div>
+        <div class="text-muted small">Pts C+D</div>
+      </div>
+      <div class="col-3">
+        <div class="fw-bold fs-4 text-primary">{{ "%.2f"|format(pts_total) }}</div>
+        <div class="text-muted small">Pts totales</div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endif %}
+{% endblock %}

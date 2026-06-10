@@ -8,61 +8,54 @@
 </div>
 
 {% macro match_card(m) %}
-<div class="card mb-2 {% if m.goles_local is not none %}border-success{% else %}border-secondary{% endif %}">
+<div class="card mb-2 {% if m.get('goles_local') is not none and m.get('resultado') %}border-success{% else %}border-secondary{% endif %}">
   <div class="card-body py-2 px-3">
+    {% set r = m.get('resultado') %}
     <div class="d-flex justify-content-between align-items-center mb-1">
       <div>
-        {% if m.flag_local %}<img src="{{ m.flag_local }}" width="18" height="14" class="me-1">{% endif %}
-        <span class="small {% if m.avanza == 'local' %}fw-bold text-success{% endif %}">{{ m.local or 'TBD' }}</span>
+        {% if m.get('flag_local') %}<img src="{{ m.flag_local }}" width="18" height="14" class="me-1">{% endif %}
+        <span class="small {% if r and r.avanza == 'local' %}fw-bold text-success{% endif %}">
+          {{ m.local_label }}
+        </span>
       </div>
-      <span class="fw-bold ms-2">{% if m.goles_local is not none %}{{ m.goles_local }}{% else %}–{% endif %}</span>
+      <span class="fw-bold ms-2 {% if not r %}text-muted{% endif %}">
+        {% if r and r.goles_local is not none %}{{ r.goles_local }}{% else %}–{% endif %}
+      </span>
     </div>
     <div class="d-flex justify-content-between align-items-center">
       <div>
-        {% if m.flag_visitante %}<img src="{{ m.flag_visitante }}" width="18" height="14" class="me-1">{% endif %}
-        <span class="small {% if m.avanza == 'visitante' %}fw-bold text-success{% endif %}">{{ m.visitante or 'TBD' }}</span>
+        {% if m.get('flag_visitante') %}<img src="{{ m.flag_visitante }}" width="18" height="14" class="me-1">{% endif %}
+        <span class="small {% if r and r.avanza == 'visitante' %}fw-bold text-success{% endif %}">
+          {{ m.visitante_label }}
+        </span>
       </div>
-      <span class="fw-bold ms-2">{% if m.goles_visitante is not none %}{{ m.goles_visitante }}{% else %}–{% endif %}</span>
+      <span class="fw-bold ms-2 {% if not r %}text-muted{% endif %}">
+        {% if r and r.goles_visitante is not none %}{{ r.goles_visitante }}{% else %}–{% endif %}
+      </span>
     </div>
-    {% if m.goles_local is not none %}
+    {% if r and r.pts_local is not none %}
     <div class="d-flex justify-content-between text-muted mt-1" style="font-size:0.65rem">
-      <span>{{ "%.2f"|format(m.pts_local|float) }} pts</span>
-      <span>{{ "%.2f"|format(m.pts_visitante|float) }} pts</span>
+      <span>{{ "%.2f"|format(r.pts_local|float) }} pts</span>
+      <span>{{ "%.2f"|format(r.pts_visitante|float) }} pts</span>
     </div>
     {% endif %}
+    <div class="text-muted mt-1" style="font-size:0.65rem">{{ m.fecha }}</div>
   </div>
 </div>
 {% endmacro %}
 
-{% if bracket.r32 %}
-<h6 class="fw-bold text-muted text-uppercase mt-2 mb-2">Ronda de 32</h6>
+{% for fase_label, fase_key in [("Ronda de 32","r32"),("Octavos de final","r16"),("Cuartos de final","qf"),("Semifinales","sf")] %}
+{% if bracket[fase_key] %}
+<h6 class="fw-bold text-muted text-uppercase mt-3 mb-2">{{ fase_label }}</h6>
 <div class="row g-2 mb-3">
-  {% for m in bracket.r32 %}<div class="col-md-4 col-lg-3">{{ match_card(m) }}</div>{% endfor %}
+  {% for m in bracket[fase_key] %}
+  <div class="col-md-4 col-lg-3">{{ match_card(m) }}</div>
+  {% endfor %}
 </div>
 {% endif %}
+{% endfor %}
 
-{% if bracket.r16 %}
-<h6 class="fw-bold text-muted text-uppercase mt-2 mb-2">Octavos de final</h6>
-<div class="row g-2 mb-3">
-  {% for m in bracket.r16 %}<div class="col-md-4 col-lg-3">{{ match_card(m) }}</div>{% endfor %}
-</div>
-{% endif %}
-
-{% if bracket.qf %}
-<h6 class="fw-bold text-muted text-uppercase mt-2 mb-2">Cuartos de final</h6>
-<div class="row g-2 mb-3">
-  {% for m in bracket.qf %}<div class="col-md-4 col-lg-3">{{ match_card(m) }}</div>{% endfor %}
-</div>
-{% endif %}
-
-{% if bracket.sf %}
-<h6 class="fw-bold text-muted text-uppercase mt-2 mb-2">Semifinales</h6>
-<div class="row g-2 mb-3">
-  {% for m in bracket.sf %}<div class="col-md-4 col-lg-3">{{ match_card(m) }}</div>{% endfor %}
-</div>
-{% endif %}
-
-<div class="row g-3">
+<div class="row g-3 mt-1">
   {% if bracket.tp %}
   <div class="col-md-6">
     <h6 class="fw-bold text-muted text-uppercase mb-2">Tercer lugar</h6>
@@ -76,10 +69,4 @@
   </div>
   {% endif %}
 </div>
-
-{% if not bracket.r32 and not bracket.r16 %}
-<div class="alert alert-info mt-3">
-  El bracket se activará cuando comiencen los partidos de eliminación directa (28 de junio).
-</div>
-{% endif %}
 {% endblock %}

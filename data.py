@@ -136,3 +136,44 @@ MATCHES = [
 ]
 
 MATCHES_BY_NUM = {m[0]: {"numero":m[0],"fecha":m[1],"fase":m[2],"grupo":m[3],"local":m[4],"visitante":m[5]} for m in MATCHES}
+
+# ── Fixture eliminatorio (posiciones de grupo) ────────────────────────────────
+KNOCKOUT_FIXTURE = [
+    # Ronda de 32 (match_num, fecha, pos1, pos2)
+    (73,  "2026-06-28", "Ronda de 32", "2A",      "2B"),
+    (74,  "2026-06-29", "Ronda de 32", "1E",      "3-ABCDF"),
+    (75,  "2026-06-29", "Ronda de 32", "1F",      "2C"),
+    (76,  "2026-06-29", "Ronda de 32", "1C",      "2F"),
+    (77,  "2026-06-30", "Ronda de 32", "1I",      "3-CDFGH"),
+    (78,  "2026-06-30", "Ronda de 32", "2E",      "2I"),
+    (79,  "2026-06-30", "Ronda de 32", "1A",      "3-CEFHI"),
+    (80,  "2026-07-01", "Ronda de 32", "1L",      "3-EHIJK"),
+    (81,  "2026-07-01", "Ronda de 32", "1D",      "3-BEFIJ"),
+    (82,  "2026-07-01", "Ronda de 32", "1G",      "3-AEHIJ"),
+    (83,  "2026-07-02", "Ronda de 32", "2K",      "2L"),
+    (84,  "2026-07-02", "Ronda de 32", "1H",      "2J"),
+    (85,  "2026-07-02", "Ronda de 32", "1B",      "3-EFGIJ"),
+    (86,  "2026-07-03", "Ronda de 32", "1J",      "2H"),
+    (87,  "2026-07-03", "Ronda de 32", "1K",      "3-DEIJL"),
+    (88,  "2026-07-03", "Ronda de 32", "2D",      "2G"),
+    # Octavos
+    (89,  "2026-07-04", "Octavos",     "W74",     "W77"),
+    (90,  "2026-07-04", "Octavos",     "W73",     "W75"),
+    (91,  "2026-07-05", "Octavos",     "W76",     "W78"),
+    (92,  "2026-07-05", "Octavos",     "W79",     "W80"),
+    (93,  "2026-07-06", "Octavos",     "W83",     "W84"),
+    (94,  "2026-07-06", "Octavos",     "W81",     "W82"),
+    (95,  "2026-07-07", "Octavos",     "W86",     "W88"),
+    (96,  "2026-07-07", "Octavos",     "W85",     "W87"),
+    # Cuartos
+    (97,  "2026-07-09", "Cuartos",     "W89",     "W90"),
+    (98,  "2026-07-10", "Cuartos",     "W93",     "W94"),
+    (99,  "2026-07-11", "Cuartos",     "W91",     "W92"),
+    (100, "2026-07-11", "Cuartos",     "W95",     "W96"),
+    # Semifinales
+    (101, "2026-07-14", "Semifinal",   "W97",     "W98"),
+    (102, "2026-07-15", "Semifinal",   "W99",     "W100"),
+    # Tercer lugar y Final
+    (103, "2026-07-18", "Tercer lugar","RU101",   "RU102"),
+    (104, "2026-07-19", "Final",       "W101",    "W102"),
+]

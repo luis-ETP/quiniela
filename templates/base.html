@@ -8,28 +8,25 @@
   <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-
 {% if user %}
 <nav class="navbar navbar-dark bg-dark px-3">
   <a class="navbar-brand fw-bold" href="/">⚽ Quiniela 2026</a>
   <div class="d-flex gap-3 align-items-center">
     <a class="nav-link text-white" href="/">Tabla</a>
-    <a class="nav-link text-white" href="/draft">Draft</a>
-    <a class="nav-link text-white" href="/matches">Resultados</a>
+    <a class="nav-link text-white" href="/mis-equipos">Mis Equipos</a>
+    <a class="nav-link text-white" href="/matches">Partidos</a>
     <a class="nav-link text-white" href="/bracket">Bracket</a>
-    {% if profile and profile.is_admin %}
-    <a class="nav-link text-warning" href="/admin/draft-order">⚙ Admin</a>
+    {% if user.is_admin %}
+    <a class="nav-link text-warning" href="/admin/draft-order">⚙ Draft</a>
     {% endif %}
-    <span class="text-secondary small">{{ profile.nombre if profile else user.email }}</span>
+    <span class="text-secondary small">{{ user.nombre }}</span>
     <a class="btn btn-sm btn-outline-light" href="/logout">Salir</a>
   </div>
 </nav>
 {% endif %}
-
 <div class="container py-4">
   {% block content %}{% endblock %}
 </div>
-
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 {% block scripts %}{% endblock %}
 </body>
