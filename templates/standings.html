@@ -5,8 +5,7 @@
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h4 class="fw-bold mb-0">🏆 Tabla General</h4>
   <div class="text-muted small">
-    Partidos finalizados: <strong>{{ finalizados }}</strong> &nbsp;|&nbsp;
-    Pagados: <strong>{{ pagados }}/12</strong>
+    Partidos finalizados: <strong>{{ finalizados }}</strong>
   </div>
 </div>
 
@@ -32,24 +31,22 @@
   </thead>
   <tbody>
   {% for s in standings %}
-    {% set pos = s.posicion %}
     <tr class="
-      {% if pos == 1 %}table-warning fw-bold
-      {% elif pos == 2 %}table-secondary
-      {% elif pos == 3 %}bg-bronze
+      {% if s.posicion == 1 %}table-warning fw-bold
+      {% elif s.posicion == 2 %}table-secondary
+      {% elif s.posicion == 3 %}bg-bronze
       {% endif %}
       {% if not s.lineup_completo %}opacity-75{% endif %}
     ">
       <td>
-        {% if pos == 1 %}🥇
-        {% elif pos == 2 %}🥈
-        {% elif pos == 3 %}🥉
-        {% else %}{{ pos }}{% endif %}
+        {% if s.posicion == 1 %}🥇
+        {% elif s.posicion == 2 %}🥈
+        {% elif s.posicion == 3 %}🥉
+        {% else %}{{ s.posicion }}{% endif %}
       </td>
       <td class="text-start">
-        {{ s.profile.nombre }}
+        {{ s.nombre }}
         {% if not s.lineup_completo %}<span class="badge bg-warning text-dark ms-1">Incompleto</span>{% endif %}
-        {% if not s.profile.pagado %}<span class="badge bg-danger ms-1">Pendiente</span>{% endif %}
       </td>
       {% for bombo in ["A","B","C","D"] %}
         {% set t = s.teams_by_bombo.get(bombo) %}
@@ -57,7 +54,7 @@
           {% if t %}
             <div class="fw-semibold">{{ t.nombre }}</div>
             <div class="text-muted" style="font-size:0.75rem">
-              {{ "%.2f"|format(s.pts_by_team.get(t.id, 0)) }} pts
+              {{ "%.2f"|format(s.pts_by_team.get(t.nombre, 0)) }} pts
             </div>
           {% else %}—{% endif %}
         </td>
@@ -66,7 +63,7 @@
       <td>{{ s.empates }}</td>
       {% for bombo in ["A","B","C","D"] %}
         {% set t = s.teams_by_bombo.get(bombo) %}
-        <td>{{ "%.2f"|format(s.pts_by_team.get(t.id, 0)) if t else "—" }}</td>
+        <td>{{ "%.2f"|format(s.pts_by_team.get(t.nombre, 0)) if t else "—" }}</td>
       {% endfor %}
       <td>{{ "%.2f"|format(s.pts_cd) }}</td>
       <td class="fw-bold">{{ "%.2f"|format(s.pts_total) }}</td>
@@ -77,6 +74,6 @@
 </div>
 
 <div class="text-muted small mt-2">
-  Desempate: (1) Pts totales → (2) Victorias → (3) Pts C+D → (4) Pts D → (5) Desempate manual del admin
+  Desempate: (1) Pts totales → (2) Victorias → (3) Pts C+D → (4) Pts D
 </div>
 {% endblock %}
