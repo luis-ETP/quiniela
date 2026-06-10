@@ -1,7 +1,29 @@
 import os
-from supabase import create_client
+import psycopg2
+import psycopg2.extras
 
 def get_db():
-    url = os.environ.get("SUPABASE_URL")
-    key = os.environ.get("SUPABASE_SECRET_KEY")
-    return create_client(url, key)
+    conn = psycopg2.connect(
+        os.environ.get("DATABASE_URL"),
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+    conn.autocommit = True
+    return conn
+
+def query(sql, params=None):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute(sql, params or ())
+    try:
+        rows = cur.fetchall()
+        return [dict(r) for r in rows]
+    except:
+        return []
+    finally:
+        conn.close()
+
+def execute(sql, params=None):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute(sql, params or ())
+    conn.close()
