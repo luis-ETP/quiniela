@@ -1,0 +1,9 @@
+body { background: #f8f9fa; }
+.navbar { border-bottom: 1px solid #333; }
+.bg-bronze { background-color: #f0c080 !important; }
+.border-orange { border-color: #fd7e14 !important; }
+.bg-orange { background-color: #fd7e14 !important; }
+.team-row { cursor: default; transition: background 0.1s; }
+.team-row:hover { filter: brightness(0.97); }
+.btn-xs { font-size: 0.7rem; padding: 1px 6px; }
+.sticky-top { top: 0; z-index: 1; }

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Registro — Quiniela 2026{% endblock %}
+{% block content %}
+<div class="row justify-content-center mt-5">
+  <div class="col-md-4">
+    <div class="card shadow-sm">
+      <div class="card-body p-4">
+        <h4 class="mb-4 text-center fw-bold">⚽ Crear cuenta</h4>
+
+        {% if error %}
+        <div class="alert alert-danger py-2">{{ error }}</div>
+        {% endif %}
+
+        <form method="post" action="/register">
+          <div class="mb-3">
+            <label class="form-label">Nombre</label>
+            <input type="text" name="nombre" class="form-control" required autofocus>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Correo</label>
+            <input type="email" name="email" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Contraseña</label>
+            <input type="password" name="password" class="form-control" required minlength="6">
+          </div>
+          <button type="submit" class="btn btn-dark w-100">Crear cuenta</button>
+        </form>
+        <div class="text-center mt-3">
+          <a href="/login" class="text-muted small">Ya tengo cuenta</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

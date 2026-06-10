@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Orden del Draft — Admin{% endblock %}
+{% block content %}
+<h4 class="fw-bold mb-3">⚙ Orden del Draft</h4>
+<p class="text-muted">Asigna el número de posición (1–12) a cada participante. El draft será snake.</p>
+
+<form method="post" action="/admin/draft-order">
+  <div class="card">
+    <div class="card-body">
+      <table class="table">
+        <thead><tr><th>Participante</th><th>Email</th><th>Orden (1–12)</th><th>Pagado</th></tr></thead>
+        <tbody>
+        {% for p in profiles %}
+        <tr>
+          <td>{{ p.nombre }}</td>
+          <td class="text-muted small">{{ p.email }}</td>
+          <td>
+            <input type="number" name="order_{{ p.id }}" min="1" max="12"
+                   value="{{ p.draft_orden or '' }}"
+                   class="form-control form-control-sm" style="width:80px">
+          </td>
+          <td>
+            <span class="badge {% if p.pagado %}bg-success{% else %}bg-danger{% endif %}">
+              {% if p.pagado %}Pagado{% else %}Pendiente{% endif %}
+            </span>
+          </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <button type="submit" class="btn btn-dark mt-3">Guardar orden</button>
+  <a href="/draft" class="btn btn-outline-secondary mt-3 ms-2">Cancelar</a>
+</form>
+{% endblock %}

@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% block title %}Draft — Quiniela 2026{% endblock %}
+{% block content %}
+
+<div class="row mb-4">
+  <div class="col-md-8">
+    <h4 class="fw-bold">🎯 Draft</h4>
+  </div>
+</div>
+
+<!-- Current pick banner -->
+{% if current_pick <= 48 and current_participant %}
+<div class="alert {% if current_participant.id == user.id %}alert-success{% else %}alert-info{% endif %} d-flex justify-content-between align-items-center">
+  <div>
+    <strong>Pick #{{ current_pick }}</strong> &nbsp;|&nbsp;
+    Turno de: <strong>{{ current_participant.nombre }}</strong>
+    {% set ronda = ((current_pick - 1) // 12) + 1 %}
+    &nbsp;|&nbsp; Ronda {{ ronda }}
+    (Bombo {{ ["A","B","C","D"][ronda-1] }})
+  </div>
+  <div class="text-muted small">{{ 48 - current_pick + 1 }} picks restantes</div>
+</div>
+{% else %}
+<div class="alert alert-secondary">✅ El draft ha concluido.</div>
+{% endif %}
+
+<div class="row">
+  <!-- Team selector -->
+  <div class="col-md-5">
+    <div class="card">
+      <div class="card-header fw-bold">Selecciones disponibles</div>
+      <div class="card-body p-2" style="max-height:70vh;overflow-y:auto">
+
+        <!-- Filter by bombo -->
+        <div class="btn-group mb-2 w-100" role="group">
+          {% for b in ["Todos","A","B","C","D"] %}
+          <button type="button" class="btn btn-sm btn-outline-dark bombo-filter" data-bombo="{{ b }}">
+            {{ b }}
+          </button>
+          {% endfor %}
+        </div>
+
+        {% set is_my_turn = current_participant and current_participant.id == user.id and current_pick <= 48 %}
+
+        {% for team in teams %}
+          {% set taken = team.id in picked_team_ids %}
+          <div class="team-row d-flex justify-content-between align-items-center p-2 mb-1 rounded
+            {% if taken %}bg-light text-muted{% else %}
+              {% if team.bombo == 'A' %}border-success border
+              {% elif team.bombo == 'B' %}border-warning border
+              {% elif team.bombo == 'C' %}border-orange border
+              {% else %}border-danger border
+              {% endif %}
+            {% endif %}"
+            data-bombo="{{ team.bombo }}">
+            <div>
+              <span class="fw-semibold">{{ team.nombre }}</span>
+              <span class="badge ms-1
+                {% if team.bombo == 'A' %}bg-success
+                {% elif team.bombo == 'B' %}bg-warning text-dark
+                {% elif team.bombo == 'C' %}bg-orange
+                {% else %}bg-danger{% endif %}">
+                {{ team.bombo }}
+              </span>
+              <span class="text-muted small ms-1">Gr.{{ team.grupo_oficial or '?' }}</span>
+            </div>
+            <div>
+              {% if taken %}
+                <span class="badge bg-secondary">Elegido</span>
+              {% elif is_my_turn %}
+                <form method="post" action="/draft/pick" style="display:inline">
+                  <input type="hidden" name="team_id" value="{{ team.id }}">
+                  <button class="btn btn-sm btn-dark">Elegir</button>
+                </form>
+              {% else %}
+                <span class="text-muted small">{{ team.pts_victoria }} pts/V</span>
+              {% endif %}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Pick log -->
+  <div class="col-md-7">
+    <div class="card">
+      <div class="card-header fw-bold">Historial de picks</div>
+      <div class="card-body p-0" style="max-height:70vh;overflow-y:auto">
+        <table class="table table-sm mb-0">
+          <thead class="table-dark sticky-top">
+            <tr>
+              <th>#</th>
+              <th>Ronda</th>
+              <th>Participante</th>
+              <th>Equipo</th>
+              <th>Bombo</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+          {% for pick in picks %}
+            <tr class="
+              {% if pick.group_conflict and not pick.exception_authorized %}table-danger
+              {% elif pick.group_conflict and pick.exception_authorized %}table-warning
+              {% else %}table-success{% endif %}">
+              <td>{{ pick.pick_numero }}</td>
+              <td>{{ pick.ronda }}</td>
+              <td>{{ pick.profiles.nombre if pick.profiles else '—' }}</td>
+              <td>{{ pick.teams.nombre if pick.teams else '—' }}</td>
+              <td>
+                <span class="badge
+                  {% if pick.teams.bombo == 'A' %}bg-success
+                  {% elif pick.teams.bombo == 'B' %}bg-warning text-dark
+                  {% elif pick.teams.bombo == 'C' %}bg-orange
+                  {% else %}bg-danger{% endif %}">
+                  {{ pick.teams.bombo if pick.teams else '—' }}
+                </span>
+              </td>
+              <td>
+                {% if pick.group_conflict and not pick.exception_authorized %}
+                  <span class="text-danger small">⚠ Conflicto grupo</span>
+                  {% if profile.is_admin %}
+                  <form method="post" action="/draft/exception/{{ pick.id }}" style="display:inline">
+                    <button class="btn btn-xs btn-warning btn-sm py-0 ms-1">✓ Autorizar</button>
+                  </form>
+                  {% endif %}
+                {% elif pick.group_conflict and pick.exception_authorized %}
+                  <span class="text-warning small">⚡ Excepción</span>
+                {% else %}
+                  <span class="text-success small">✓ Válido</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.querySelectorAll('.bombo-filter').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const bombo = btn.dataset.bombo;
+    document.querySelectorAll('.team-row').forEach(row => {
+      row.style.display = (bombo === 'Todos' || row.dataset.bombo === bombo) ? '' : 'none';
+    });
+    document.querySelectorAll('.bombo-filter').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  });
+});
+</script>
+{% endblock %}
