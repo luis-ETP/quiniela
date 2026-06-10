@@ -75,7 +75,6 @@ def check_and_auto_pick(picks, draft_order, picked_teams, current_pick, current_
     if not pick_started_at or not current_participant or current_pick > 48:
         return False
     if isinstance(pick_started_at, str):
-        from datetime import datetime, timezone
         pick_started_at = datetime.fromisoformat(pick_started_at)
     now = datetime.now(timezone.utc)
     if pick_started_at.tzinfo is None:
