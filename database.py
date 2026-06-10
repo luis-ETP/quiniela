@@ -1,29 +1,21 @@
 import os
-import psycopg2
-import psycopg2.extras
+import psycopg
+from psycopg.rows import dict_row
 
-def get_db():
-    conn = psycopg2.connect(
-        os.environ.get("DATABASE_URL"),
-        cursor_factory=psycopg2.extras.RealDictCursor
-    )
-    conn.autocommit = True
-    return conn
+def get_conn():
+    return psycopg.connect(os.environ.get("DATABASE_URL"), row_factory=dict_row)
 
 def query(sql, params=None):
-    conn = get_db()
-    cur = conn.cursor()
-    cur.execute(sql, params or ())
-    try:
-        rows = cur.fetchall()
-        return [dict(r) for r in rows]
-    except:
-        return []
-    finally:
-        conn.close()
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(sql, params or ())
+            try:
+                return cur.fetchall()
+            except:
+                return []
 
 def execute(sql, params=None):
-    conn = get_db()
-    cur = conn.cursor()
-    cur.execute(sql, params or ())
-    conn.close()
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(sql, params or ())
+        conn.commit()
