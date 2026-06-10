@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block title %}Bracket — Quiniela 2026{% endblock %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="fw-bold mb-0">🏆 Bracket eliminatorio</h4>
+  <span class="text-muted small">Se actualiza automáticamente</span>
+</div>
+
+{% macro match_card(m, show_pts=true) %}
+<div class="card mb-2 {% if m.goles_local is not none %}border-success{% else %}border-secondary{% endif %}" style="min-width:200px">
+  <div class="card-body py-1 px-2">
+    <div class="d-flex justify-content-between align-items-center">
+      <span class="{% if m.avanza == 'local' %}fw-bold text-success{% endif %}">
+        {{ m.flag_local }} {{ m.local or 'TBD' }}
+      </span>
+      <span class="fw-bold ms-2">
+        {% if m.goles_local is not none %}{{ m.goles_local }}{% else %}–{% endif %}
+      </span>
+    </div>
+    <div class="d-flex justify-content-between align-items-center mt-1">
+      <span class="{% if m.avanza == 'visitante' %}fw-bold text-success{% endif %}">
+        {{ m.flag_visitante }} {{ m.visitante or 'TBD' }}
+      </span>
+      <span class="fw-bold ms-2">
+        {% if m.goles_visitante is not none %}{{ m.goles_visitante }}{% else %}–{% endif %}
+      </span>
+    </div>
+    {% if show_pts and m.goles_local is not none %}
+    <div class="d-flex justify-content-between text-muted mt-1" style="font-size:0.65rem">
+      <span>{{ "%.2f"|format(m.pts_local|float) }} pts</span>
+      <span>{{ "%.2f"|format(m.pts_visitante|float) }} pts</span>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endmacro %}
+
+<!-- Ronda de 32 -->
+{% if bracket.r32 %}
+<h6 class="fw-bold text-muted text-uppercase mt-3 mb-2">Ronda de 32</h6>
+<div class="row g-2 mb-4">
+  {% for m in bracket.r32 %}
+  <div class="col-md-4 col-lg-3">{{ match_card(m) }}</div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- Octavos -->
+{% if bracket.r16 %}
+<h6 class="fw-bold text-muted text-uppercase mt-3 mb-2">Octavos de final</h6>
+<div class="row g-2 mb-4">
+  {% for m in bracket.r16 %}
+  <div class="col-md-4 col-lg-3">{{ match_card(m) }}</div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- Cuartos -->
+{% if bracket.qf %}
+<h6 class="fw-bold text-muted text-uppercase mt-3 mb-2">Cuartos de final</h6>
+<div class="row g-2 mb-4">
+  {% for m in bracket.qf %}
+  <div class="col-md-4 col-lg-3">{{ match_card(m) }}</div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- Semifinales -->
+{% if bracket.sf %}
+<h6 class="fw-bold text-muted text-uppercase mt-3 mb-2">Semifinales</h6>
+<div class="row g-2 mb-4">
+  {% for m in bracket.sf %}
+  <div class="col-md-4 col-lg-3">{{ match_card(m) }}</div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- Tercer lugar + Final -->
+<div class="row g-3">
+  {% if bracket.tp %}
+  <div class="col-md-6">
+    <h6 class="fw-bold text-muted text-uppercase mb-2">Tercer lugar</h6>
+    {% for m in bracket.tp %}{{ match_card(m) }}{% endfor %}
+  </div>
+  {% endif %}
+  {% if bracket.f %}
+  <div class="col-md-6">
+    <h6 class="fw-bold text-uppercase mb-2" style="color:#c8a400">🏆 Final</h6>
+    {% for m in bracket.f %}{{ match_card(m) }}{% endfor %}
+  </div>
+  {% endif %}
+</div>
+
+{% if not bracket.r32 and not bracket.r16 %}
+<div class="alert alert-info mt-3">
+  El bracket se activará cuando comiencen los partidos de eliminación directa (28 de junio).
+</div>
+{% endif %}
+
+{% endblock %}

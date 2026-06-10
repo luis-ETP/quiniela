@@ -2,76 +2,119 @@
 {% block title %}Resultados — Quiniela 2026{% endblock %}
 {% block content %}
 
-<h4 class="fw-bold mb-3">📋 Resultados</h4>
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="fw-bold mb-0">📋 Resultados</h4>
+  <div class="d-flex gap-2 align-items-center">
+    <span class="text-muted small">Se actualiza automáticamente</span>
+    {% if user.is_admin %}
+    <a href="/admin/sync-results" class="btn btn-sm btn-outline-dark">🔄 Forzar sync</a>
+    {% endif %}
+    <a href="/bracket" class="btn btn-sm btn-dark">🏆 Bracket</a>
+  </div>
+</div>
 
 <!-- Phase tabs -->
 <ul class="nav nav-tabs mb-3">
   {% for phase in phases %}
   <li class="nav-item">
-    <a class="nav-link {% if phase == current_phase %}active{% endif %}"
+    <a class="nav-link {% if phase == current_phase %}active fw-bold{% endif %}"
        href="/matches?phase={{ phase }}">{{ phase }}</a>
   </li>
   {% endfor %}
 </ul>
 
-<div class="row g-3">
-{% for match in matches %}
-<div class="col-md-6 col-lg-4">
-  <div class="card {% if match.estado == 'Finalizado' %}border-success{% endif %}">
-    <div class="card-header d-flex justify-content-between align-items-center py-1">
-      <span class="small text-muted">Partido {{ match.numero }}</span>
-      <span class="badge {% if match.estado == 'Finalizado' %}bg-success{% else %}bg-secondary{% endif %}">
-        {{ match.estado }}
-      </span>
-    </div>
-    <div class="card-body py-2">
-      <div class="text-muted small mb-1">{{ match.fecha.split('T')[0] if match.fecha else '' }} — Gr.{{ match.grupo or '' }}</div>
-
-      {% if match.estado == 'Finalizado' %}
-        <div class="d-flex justify-content-between align-items-center">
-          <span class="fw-semibold" style="width:40%">{{ match.local_nombre }}</span>
-          <span class="fs-5 fw-bold">{{ match.goles_local }} — {{ match.goles_visitante }}</span>
-          <span class="fw-semibold text-end" style="width:40%">{{ match.visitante_nombre }}</span>
-        </div>
-        {% if match.fase != 'Grupos' and match.equipo_avanza_nombre %}
-        <div class="text-center mt-1">
-          <span class="badge bg-primary">Avanza: {{ match.equipo_avanza_nombre }}</span>
-        </div>
-        {% endif %}
-        <div class="d-flex justify-content-between text-muted small mt-1">
-          <span>{{ match.pts_local }} pts</span>
-          <span>{{ match.pts_visitante }} pts</span>
-        </div>
-      {% else %}
-        <!-- Result form -->
-        <form method="post" action="/matches/{{ match.id }}/result">
-          <div class="d-flex align-items-center gap-2 mb-2">
-            <span class="fw-semibold small" style="width:38%">{{ match.local_nombre }}</span>
-            <input type="number" name="goles_local" min="0" max="20" value="0"
-                   class="form-control form-control-sm text-center" style="width:55px">
-            <span>—</span>
-            <input type="number" name="goles_visitante" min="0" max="20" value="0"
-                   class="form-control form-control-sm text-center" style="width:55px">
-            <span class="fw-semibold small text-end" style="width:38%">{{ match.visitante_nombre }}</span>
+{% if is_grupos %}
+<!-- Group stage: organized by group -->
+{% set grupos = ["A","B","C","D","E","F","G","H","I","J","K","L"] %}
+{% for grupo in grupos %}
+  {% set grupo_matches = matches | selectattr("grupo", "equalto", grupo) | list %}
+  {% if grupo_matches %}
+  <div class="mb-4">
+    <h6 class="fw-bold text-uppercase text-muted mb-2">Grupo {{ grupo }}</h6>
+    <div class="row g-2">
+    {% for m in grupo_matches %}
+      {% set r = m.resultado %}
+      <div class="col-md-6 col-lg-4">
+        <div class="card {% if r %}border-success{% else %}border-light{% endif %} h-100">
+          <div class="card-body py-2 px-3">
+            <div class="text-muted" style="font-size:0.7rem">{{ m.fecha }} · Gr. {{ m.grupo }}</div>
+            <div class="d-flex align-items-center justify-content-between mt-1">
+              <div class="text-start" style="width:42%">
+                <span style="font-size:1.2rem">{{ m.flag_local }}</span>
+                <span class="fw-semibold small">{{ m.local }}</span>
+              </div>
+              <div class="text-center fw-bold fs-5" style="width:16%">
+                {% if r and r.goles_local is not none %}
+                  {{ r.goles_local }}–{{ r.goles_visitante }}
+                {% else %}
+                  <span class="text-muted small">vs</span>
+                {% endif %}
+              </div>
+              <div class="text-end" style="width:42%">
+                <span class="fw-semibold small">{{ m.visitante }}</span>
+                <span style="font-size:1.2rem">{{ m.flag_visitante }}</span>
+              </div>
+            </div>
+            {% if r and r.pts_local is not none %}
+            <div class="d-flex justify-content-between text-muted mt-1" style="font-size:0.7rem">
+              <span>{{ "%.2f"|format(r.pts_local|float) }} pts</span>
+              <span>{{ "%.2f"|format(r.pts_visitante|float) }} pts</span>
+            </div>
+            {% endif %}
           </div>
-
-          {% if match.fase != 'Grupos' %}
-          <div class="mb-2">
-            <label class="form-label small mb-1">Equipo que avanza</label>
-            <select name="equipo_avanza_id" class="form-select form-select-sm" required>
-              <option value="">— Seleccionar —</option>
-              <option value="{{ match.local_id }}">{{ match.local_nombre }}</option>
-              <option value="{{ match.visitante_id }}">{{ match.visitante_nombre }}</option>
-            </select>
-          </div>
-          {% endif %}
-
-          <button type="submit" class="btn btn-sm btn-dark w-100">Guardar resultado</button>
-        </form>
-      {% endif %}
+        </div>
+      </div>
+    {% endfor %}
     </div>
   </div>
-</div>
+  {% endif %}
+{% endfor %}
+
+{% else %}
+<!-- Knockout stage -->
+{% if matches %}
+<div class="row g-3">
+{% for m in matches %}
+  {% set r = m.resultado %}
+  <div class="col-md-6 col-lg-4">
+    <div class="card {% if r and r.goles_local is not none %}border-success{% endif %}">
+      <div class="card-header py-1 small text-muted">{{ current_phase }} · Partido {{ m.numero }}</div>
+      <div class="card-body py-2 px-3">
+        <div class="d-flex align-items-center justify-content-between">
+          <div class="text-start" style="width:42%">
+            <span style="font-size:1.2rem">{{ m.flag_local }}</span>
+            <span class="fw-semibold small">{{ m.local }}</span>
+            {% if r and r.avanza == "local" %}<span class="badge bg-success ms-1">✓</span>{% endif %}
+          </div>
+          <div class="text-center fw-bold fs-5" style="width:16%">
+            {% if r and r.goles_local is not none %}
+              {{ r.goles_local }}–{{ r.goles_visitante }}
+            {% else %}
+              <span class="text-muted small">vs</span>
+            {% endif %}
+          </div>
+          <div class="text-end" style="width:42%">
+            <span class="fw-semibold small">{{ m.visitante }}</span>
+            <span style="font-size:1.2rem">{{ m.flag_visitante }}</span>
+            {% if r and r.avanza == "visitante" %}<span class="badge bg-success ms-1">✓</span>{% endif %}
+          </div>
+        </div>
+        {% if r and r.pts_local is not none %}
+        <div class="d-flex justify-content-between text-muted mt-1" style="font-size:0.7rem">
+          <span>{{ "%.2f"|format(r.pts_local|float) }} pts</span>
+          <span>{{ "%.2f"|format(r.pts_visitante|float) }} pts</span>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
 {% endfor %}
 </div>
+{% else %}
+<div class="alert alert-info">
+  No hay partidos finalizados en esta fase todavía. Los resultados se actualizarán automáticamente.
+</div>
+{% endif %}
+{% endif %}
+
 {% endblock %}
