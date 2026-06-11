@@ -185,45 +185,6 @@ async def matches_page(request: Request, phase: str = "Grupos"):
     })
 
 
-@router.post("/duelo/{match_num}/apuesta")
-async def set_apuesta(request: Request, match_num: int, monto: float = Form(...)):
-    user = get_current_user(request)
-    if not user:
-        return RedirectResponse("/login", status_code=302)
-
-    duelo = query("SELECT * FROM duelos WHERE match_numero = %s", (match_num,))
-    if not duelo:
-        return RedirectResponse("/matches", status_code=302)
-    duelo = duelo[0]
-
-    # Only the owners can bet
-    if is_match_locked(match_num):
-        from data import MATCHES_BY_NUM as MBN3
-        fase = MATCHES_BY_NUM.get(match_num, {}).get("fase", "Grupos")
-        return RedirectResponse(f"/matches?phase={fase}", status_code=302)
-    if monto < 20 or monto > 100:
-        fase = "Grupos"
-        from data import MATCHES_BY_NUM as MBN2
-        if match_num in MBN2:
-            fase = MBN2[match_num]["fase"]
-        return RedirectResponse(f"/matches?phase={fase}", status_code=302)
-    if user["username"] == duelo["owner1_username"]:
-        execute("UPDATE duelos SET apuesta1 = %s WHERE match_numero = %s", (monto, match_num))
-    elif user["username"] == duelo["owner2_username"]:
-        execute("UPDATE duelos SET apuesta2 = %s WHERE match_numero = %s", (monto, match_num))
-
-    # Redirect back to correct phase
-    from data import MATCHES_BY_NUM as MBN
-    fase = "Grupos"
-    if match_num in MBN:
-        fase = MBN[match_num]["fase"]
-    else:
-        result = query("SELECT fase FROM results WHERE match_numero = %s", (match_num,))
-        if result:
-            fase = result[0]["fase"]
-    return RedirectResponse(f"/matches?phase={fase}", status_code=302)
-
-
 @router.get("/admin/sync-results")
 async def sync_results_get(request: Request):
     user = get_current_user(request)

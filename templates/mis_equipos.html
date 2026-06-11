@@ -5,10 +5,10 @@
 <h4 class="fw-bold mb-4">⭐ Mis Equipos</h4>
 
 {% if not picks %}
-<div class="alert alert-info">
-  Aún no tienes equipos asignados. El draft no ha comenzado.
-</div>
+<div class="alert alert-info">Aún no tienes equipos asignados. El draft no ha comenzado.</div>
 {% else %}
+
+<!-- Team cards by bombo -->
 <div class="row g-3 mb-4">
   {% for bombo in ["A","B","C","D"] %}
     {% set t = picks_by_bombo.get(bombo) %}
@@ -25,10 +25,10 @@
           {% else %}bg-danger text-white{% endif %}">
           Bombo {{ bombo }}
           <span class="float-end">
-            {% if bombo == 'A' %}1 pt/V · 0.5/E
-            {% elif bombo == 'B' %}1.5 pt/V · 0.75/E
-            {% elif bombo == 'C' %}2 pt/V · 1/E
-            {% else %}3 pt/V · 1.5/E{% endif %}
+            {% if bombo == 'A' %}1 pt/V
+            {% elif bombo == 'B' %}1.5 pt/V
+            {% elif bombo == 'C' %}2 pt/V
+            {% else %}3 pt/V{% endif %}
           </span>
         </div>
         <div class="card-body text-center py-3">
@@ -60,18 +60,17 @@
   {% endfor %}
 </div>
 
-<!-- Summary -->
-{% if picks %}
-<div class="card">
+<!-- Points summary -->
+<div class="card mb-4">
   <div class="card-body">
     <div class="row text-center">
       <div class="col-3">
         <div class="fw-bold fs-4">{{ total_victorias }}</div>
-        <div class="text-muted small">Victorias totales</div>
+        <div class="text-muted small">Victorias</div>
       </div>
       <div class="col-3">
         <div class="fw-bold fs-4">{{ total_empates }}</div>
-        <div class="text-muted small">Empates totales</div>
+        <div class="text-muted small">Empates</div>
       </div>
       <div class="col-3">
         <div class="fw-bold fs-4 text-success">{{ "%.2f"|format(pts_cd) }}</div>
@@ -84,6 +83,110 @@
     </div>
   </div>
 </div>
+
 {% endif %}
+
+<!-- Duelos section -->
+{% if duelos %}
+<div class="d-flex justify-content-between align-items-center mb-2">
+  <h5 class="fw-bold mb-0">⚔️ Mis Duelos</h5>
+  <div>
+    <span class="text-muted small me-2">Balance:</span>
+    <span class="fw-bold {% if balance > 0 %}text-success{% elif balance < 0 %}text-danger{% endif %}">
+      {% if balance > 0 %}+{% endif %}${{ "%.0f"|format(balance) }} MXN
+    </span>
+  </div>
+</div>
+
+<div class="row g-3">
+{% for d in duelos %}
+<div class="col-md-6 col-lg-4">
+  <div class="card {% if d.ganador_username == user.username %}border-success
+                   {% elif d.ganador_username %}border-danger
+                   {% elif d.locked %}border-secondary
+                   {% else %}border-warning{% endif %}">
+    <div class="card-body py-2 px-3">
+
+      <!-- Match info -->
+      <div class="d-flex justify-content-between mb-1" style="font-size:0.7rem">
+        <span class="text-muted">{{ d.fecha }}
+          {% if d.kickoff %} · 🕐{{ d.kickoff[11:16] }}{% endif %}
+        </span>
+        {% if d.ganador_username %}
+          {% if d.ganador_username == user.username %}
+          <span class="badge bg-success">💰 Ganaste</span>
+          {% else %}
+          <span class="badge bg-danger">Perdiste</span>
+          {% endif %}
+        {% elif d.locked %}
+          <span class="badge bg-secondary">En curso</span>
+        {% else %}
+          <span class="badge bg-warning text-dark">Abierto</span>
+        {% endif %}
+      </div>
+
+      <!-- Teams -->
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <div>
+          {% if d.flag_local %}<img src="{{ d.flag_local }}" width="18" height="13" class="me-1">{% endif %}
+          <span class="small fw-semibold">{{ d.local }}</span>
+        </div>
+        <span class="text-muted small">⚔️</span>
+        <div class="text-end">
+          <span class="small fw-semibold">{{ d.visitante }}</span>
+          {% if d.flag_visitante %}<img src="{{ d.flag_visitante }}" width="18" height="13" class="ms-1">{% endif %}
+        </div>
+      </div>
+
+      <!-- Bet amounts -->
+      <div class="d-flex justify-content-between" style="font-size:0.78rem">
+        <div>
+          <div class="text-muted small">{{ user_names.get(d.owner1_username, d.owner1_username) }}</div>
+          {% if d.apuesta1 is not none %}
+            <span class="fw-bold text-success">${{ "%.0f"|format(d.apuesta1) }}</span>
+          {% else %}
+            <span class="text-muted fst-italic">Sin apuesta</span>
+          {% endif %}
+        </div>
+        <div class="text-end">
+          <div class="text-muted small">{{ user_names.get(d.owner2_username, d.owner2_username) }}</div>
+          {% if d.apuesta2 is not none %}
+            <span class="fw-bold text-success">${{ "%.0f"|format(d.apuesta2) }}</span>
+          {% else %}
+            <span class="text-muted fst-italic">Sin apuesta</span>
+          {% endif %}
+        </div>
+      </div>
+
+      {% if d.apuesta1 and d.apuesta2 %}
+      <div class="text-center mt-1" style="font-size:0.7rem">
+        En juego: <span class="fw-bold text-danger">${{ "%.0f"|format([d.apuesta1, d.apuesta2]|min) }} MXN</span>
+      </div>
+      {% endif %}
+
+      <!-- Bet form if not locked and no winner -->
+      {% if not d.locked and not d.ganador_username %}
+      <form method="post" action="/duelo/{{ d.match_numero }}/apuesta" class="mt-2 d-flex gap-2 align-items-center">
+        <input type="number" name="monto" min="20" max="100" step="10"
+               placeholder="$20–100"
+               class="form-control form-control-sm" style="font-size:0.78rem"
+               value="{{ d.my_apuesta if d.my_apuesta else '' }}">
+        <button class="btn btn-sm btn-danger py-0 px-3" style="font-size:0.78rem">
+          {% if d.my_apuesta %}Cambiar{% else %}Apostar{% endif %}
+        </button>
+      </form>
+      {% endif %}
+
+    </div>
+  </div>
+</div>
+{% endfor %}
+</div>
+
+{% elif picks %}
+<div class="alert alert-secondary mt-2">
+  <span class="text-muted">Aún no hay duelos — aparecerán cuando tus equipos se enfrenten a equipos de otros participantes.</span>
+</div>
 {% endif %}
+
 {% endblock %}
