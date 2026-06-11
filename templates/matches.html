@@ -88,7 +88,7 @@
           {% endif %}
           {% if user.username == d.owner1_username and not d.ganador_username %}
           <form method="post" action="/duelo/{{ m.numero }}/apuesta" class="mt-1 d-flex gap-1">
-            <input type="number" name="monto" min="0" step="50" placeholder="MXN"
+            <input type="number" name="monto" min="20" max="100" step="10" placeholder="$20-100"
                    class="form-control form-control-sm py-0" style="width:75px;font-size:0.75rem"
                    value="{{ d.apuesta1 if d.apuesta1 else '' }}">
             <button class="btn btn-sm btn-outline-danger py-0 px-2" style="font-size:0.7rem">Apostar</button>
@@ -108,7 +108,7 @@
           {% endif %}
           {% if user.username == d.owner2_username and not d.ganador_username %}
           <form method="post" action="/duelo/{{ m.numero }}/apuesta" class="mt-1 d-flex gap-1 justify-content-end">
-            <input type="number" name="monto" min="0" step="50" placeholder="MXN"
+            <input type="number" name="monto" min="20" max="100" step="10" placeholder="$20-100"
                    class="form-control form-control-sm py-0" style="width:75px;font-size:0.75rem"
                    value="{{ d.apuesta2 if d.apuesta2 else '' }}">
             <button class="btn btn-sm btn-outline-danger py-0 px-2" style="font-size:0.7rem">Apostar</button>

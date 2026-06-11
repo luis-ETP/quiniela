@@ -157,6 +157,12 @@ async def set_apuesta(request: Request, match_num: int, monto: float = Form(...)
     duelo = duelo[0]
 
     # Only the owners can bet
+    if monto < 20 or monto > 100:
+        fase = "Grupos"
+        from data import MATCHES_BY_NUM as MBN2
+        if match_num in MBN2:
+            fase = MBN2[match_num]["fase"]
+        return RedirectResponse(f"/matches?phase={fase}", status_code=302)
     if user["username"] == duelo["owner1_username"]:
         execute("UPDATE duelos SET apuesta1 = %s WHERE match_numero = %s", (monto, match_num))
     elif user["username"] == duelo["owner2_username"]:
