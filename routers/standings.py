@@ -8,6 +8,7 @@ from data import USERS, TEAMS
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
 
+
 @router.get("/", response_class=HTMLResponse)
 async def standings_page(request: Request):
     user = get_current_user(request)
@@ -19,8 +20,7 @@ async def standings_page(request: Request):
 
     picks_by_user = {}
     for p in picks:
-        u = p["participant_username"]
-        picks_by_user.setdefault(u, []).append(p)
+        picks_by_user.setdefault(p["participant_username"], []).append(p)
 
     standings = []
     for uname, udata in USERS.items():
@@ -36,6 +36,7 @@ async def standings_page(request: Request):
         pts_total = 0.0
         victorias = 0
         empates = 0
+        derrotas = 0
         pts_by_team = {t: 0.0 for t in my_teams}
 
         for r in results:
@@ -51,7 +52,9 @@ async def standings_page(request: Request):
                 if r["fase"] == "Grupos":
                     if gl > gv: victorias += 1
                     elif gl == gv: empates += 1
+                    else: derrotas += 1
                 elif r.get("avanza") == "local": victorias += 1
+                elif r.get("avanza") == "visitante" and r.get("avanza"): derrotas += 1
 
             if visitante in my_teams:
                 pts = float(r.get("pts_visitante") or 0)
@@ -60,7 +63,9 @@ async def standings_page(request: Request):
                 if r["fase"] == "Grupos":
                     if gv > gl: victorias += 1
                     elif gv == gl: empates += 1
+                    else: derrotas += 1
                 elif r.get("avanza") == "visitante": victorias += 1
+                elif r.get("avanza") == "local" and r.get("avanza"): derrotas += 1
 
         pts_cd = sum(pts_by_team.get(t, 0) for t, td in my_teams.items() if td and td["bombo"] in ("C", "D"))
         pts_d  = sum(pts_by_team.get(t, 0) for t, td in my_teams.items() if td and td["bombo"] == "D")
@@ -73,6 +78,7 @@ async def standings_page(request: Request):
             "pts_total": round(pts_total, 2),
             "victorias": victorias,
             "empates": empates,
+            "derrotas": derrotas,
             "pts_cd": round(pts_cd, 2),
             "pts_d": round(pts_d, 2),
             "lineup_completo": len(my_picks) == 4,
