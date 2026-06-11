@@ -69,6 +69,35 @@ async def matches_page(request: Request, phase: str = "Grupos"):
     owners = get_team_owners()
 
     if phase == "Grupos":
+        # Batch: find all duelo-eligible matches upfront
+        duelo_candidates = []
+        for m in MATCHES_BY_NUM.values():
+            if m["fase"] != "Grupos":
+                continue
+            ol = owners.get(m["local"])
+            ov = owners.get(m["visitante"])
+            if ol and ov and ol != ov:
+                duelo_candidates.append((m["numero"], m["local"], m["visitante"], ol, ov))
+
+        # Bulk insert missing duelos
+        existing_nums = {d["match_numero"] for d in query("SELECT match_numero FROM duelos")}
+        for num, local, visitante, ol, ov in duelo_candidates:
+            if num not in existing_nums:
+                execute("""INSERT INTO duelos (match_numero, owner1_username, owner2_username, team1, team2)
+                    VALUES (%s,%s,%s,%s,%s) ON CONFLICT (match_numero) DO NOTHING""",
+                    (num, ol, ov, local, visitante))
+
+        # Reload duelos once
+        all_duelos = {d["match_numero"]: d for d in query("SELECT * FROM duelos")}
+
+        # Update winners in bulk
+        for num, local, visitante, ol, ov in duelo_candidates:
+            d = all_duelos.get(num)
+            r = results_by_num.get(num)
+            if d and r and r.get("avanza") and not d.get("ganador_username"):
+                update_duelo_winner(num, r["avanza"], ol, ov)
+                d["ganador_username"] = ol if r["avanza"] == "local" else ov
+
         match_list = []
         for m in sorted(MATCHES_BY_NUM.values(), key=lambda x: (x["fecha"], x["numero"])):
             if m["fase"] != "Grupos":
@@ -77,20 +106,9 @@ async def matches_page(request: Request, phase: str = "Grupos"):
             mc["resultado"] = results_by_num.get(m["numero"])
             mc["flag_local"] = flag_url(m["local"])
             mc["flag_visitante"] = flag_url(m["visitante"])
-            # Check if both teams have owners → duelo
             owner_local = owners.get(m["local"])
             owner_visitante = owners.get(m["visitante"])
-            if owner_local and owner_visitante and owner_local != owner_visitante:
-                mc["duelo"] = get_or_create_duelo(
-                    m["numero"], m["local"], m["visitante"], owner_local, owner_visitante)
-                # Update winner if match finished
-                r = mc["resultado"]
-                if r and r.get("avanza") and mc["duelo"] and not mc["duelo"].get("ganador_username"):
-                    update_duelo_winner(m["numero"], r["avanza"], owner_local, owner_visitante)
-                    mc["duelo"] = query("SELECT * FROM duelos WHERE match_numero = %s", (m["numero"],))
-                    mc["duelo"] = mc["duelo"][0] if mc["duelo"] else None
-            else:
-                mc["duelo"] = None
+            mc["duelo"] = all_duelos.get(m["numero"]) if (owner_local and owner_visitante and owner_local != owner_visitante) else None
             mc["owner_local"] = owner_local
             mc["owner_visitante"] = owner_visitante
             match_list.append(mc)
@@ -106,11 +124,16 @@ async def matches_page(request: Request, phase: str = "Grupos"):
             owner_visitante = owners.get(vis_name) if vis_name else None
             duelo = None
             if owner_local and owner_visitante and owner_local != owner_visitante:
-                duelo = get_or_create_duelo(num, local_name, vis_name, owner_local, owner_visitante)
-                if r and r.get("avanza") and duelo and not duelo.get("ganador_username"):
-                    update_duelo_winner(num, r["avanza"], owner_local, owner_visitante)
+                duelo = duelos_by_num.get(num)
+                if not duelo:
+                    execute("""INSERT INTO duelos (match_numero, owner1_username, owner2_username, team1, team2)
+                        VALUES (%s,%s,%s,%s,%s) ON CONFLICT (match_numero) DO NOTHING""",
+                        (num, owner_local, owner_visitante, local_name, vis_name))
                     d = query("SELECT * FROM duelos WHERE match_numero = %s", (num,))
-                    duelo = d[0] if d else duelo
+                    duelo = d[0] if d else None
+                if duelo and r and r.get("avanza") and not duelo.get("ganador_username"):
+                    update_duelo_winner(num, r["avanza"], owner_local, owner_visitante)
+                    duelo["ganador_username"] = owner_local if r["avanza"] == "local" else owner_visitante
             match_list.append({
                 "numero": num,
                 "fecha": fecha,
