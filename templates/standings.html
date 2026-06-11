@@ -13,20 +13,21 @@
 <table class="table table-bordered table-hover align-middle text-center small">
   <thead class="table-dark">
     <tr>
-      <th>#</th>
-      <th class="text-start">Participante</th>
-      <th>Bombo A</th>
-      <th>Bombo B</th>
-      <th>Bombo C</th>
-      <th>Bombo D</th>
-      <th>V</th>
-      <th>E</th>
-      <th>Pts A</th>
-      <th>Pts B</th>
-      <th>Pts C</th>
-      <th>Pts D</th>
-      <th>Pts C+D</th>
-      <th class="table-warning">Pts Total</th>
+      <th style="width:36px">#</th>
+      <th class="text-start" style="width:130px">Participante</th>
+      <th style="width:110px">Bombo A</th>
+      <th style="width:110px">Bombo B</th>
+      <th style="width:110px">Bombo C</th>
+      <th style="width:110px">Bombo D</th>
+      <th style="width:36px">V</th>
+      <th style="width:36px">E</th>
+      <th style="width:36px">P</th>
+      <th style="width:52px">Pts A</th>
+      <th style="width:52px">Pts B</th>
+      <th style="width:52px">Pts C</th>
+      <th style="width:52px">Pts D</th>
+      <th style="width:56px">Pts C+D</th>
+      <th class="table-warning" style="width:64px">Pts Total</th>
     </tr>
   </thead>
   <tbody>
@@ -46,21 +47,17 @@
       </td>
       <td class="text-start">
         {{ s.nombre }}
-        {% if not s.lineup_completo %}<span class="badge bg-warning text-dark ms-1">Incompleto</span>{% endif %}
+        {% if not s.lineup_completo %}<span class="badge bg-warning text-dark ms-1" style="font-size:0.6rem">Inc.</span>{% endif %}
       </td>
       {% for bombo in ["A","B","C","D"] %}
         {% set t = s.teams_by_bombo.get(bombo) %}
-        <td>
-          {% if t %}
-            <div class="fw-semibold">{{ t.nombre }}</div>
-            <div class="text-muted" style="font-size:0.75rem">
-              {{ "%.2f"|format(s.pts_by_team.get(t.nombre, 0)) }} pts
-            </div>
-          {% else %}—{% endif %}
+        <td style="width:110px;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+          {% if t %}{{ t.nombre }}{% else %}—{% endif %}
         </td>
       {% endfor %}
       <td>{{ s.victorias }}</td>
       <td>{{ s.empates }}</td>
+      <td>{{ s.derrotas }}</td>
       {% for bombo in ["A","B","C","D"] %}
         {% set t = s.teams_by_bombo.get(bombo) %}
         <td>{{ "%.2f"|format(s.pts_by_team.get(t.nombre, 0)) if t else "—" }}</td>
