@@ -51,8 +51,15 @@
       </td>
       {% for bombo in ["A","B","C","D"] %}
         {% set t = s.teams_by_bombo.get(bombo) %}
-        <td style="width:110px;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
-          {% if t %}{{ t.nombre }}{% else %}—{% endif %}
+        <td style="width:110px;max-width:110px">
+          {% if t %}
+            <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ t.nombre }}</div>
+            <div class="text-muted" style="font-size:0.65rem">
+              {{ s.team_stats.get(t.nombre, {}).get("v", 0) }}V ·
+              {{ s.team_stats.get(t.nombre, {}).get("e", 0) }}E ·
+              {{ s.team_stats.get(t.nombre, {}).get("p", 0) }}P
+            </div>
+          {% else %}—{% endif %}
         </td>
       {% endfor %}
       <td>{{ s.victorias }}</td>

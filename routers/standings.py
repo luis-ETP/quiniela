@@ -70,6 +70,31 @@ async def standings_page(request: Request):
         pts_cd = sum(pts_by_team.get(t, 0) for t, td in my_teams.items() if td and td["bombo"] in ("C", "D"))
         pts_d  = sum(pts_by_team.get(t, 0) for t, td in my_teams.items() if td and td["bombo"] == "D")
 
+        # Per-team V/E/P stats
+        team_stats = {}
+        for tname in my_teams:
+            tv = ve = tp = 0
+            for r in results:
+                local = r.get("local", "")
+                visitante = r.get("visitante", "")
+                gl = r.get("goles_local") or 0
+                gv = r.get("goles_visitante") or 0
+                if local == tname:
+                    if r["fase"] == "Grupos":
+                        if gl > gv: tv += 1
+                        elif gl == gv: ve += 1
+                        else: tp += 1
+                    elif r.get("avanza") == "local": tv += 1
+                    elif r.get("avanza") == "visitante" and r.get("avanza"): tp += 1
+                elif visitante == tname:
+                    if r["fase"] == "Grupos":
+                        if gv > gl: tv += 1
+                        elif gv == gl: ve += 1
+                        else: tp += 1
+                    elif r.get("avanza") == "visitante": tv += 1
+                    elif r.get("avanza") == "local" and r.get("avanza"): tp += 1
+            team_stats[tname] = {"v": tv, "e": ve, "p": tp}
+
         standings.append({
             "username": uname,
             "nombre": udata["nombre"],
@@ -81,6 +106,7 @@ async def standings_page(request: Request):
             "derrotas": derrotas,
             "pts_cd": round(pts_cd, 2),
             "pts_d": round(pts_d, 2),
+            "team_stats": team_stats,
             "lineup_completo": len(my_picks) == 4,
         })
 
