@@ -40,6 +40,7 @@
       <div class="text-center fw-bold" style="width:16%">
         {% if r and r.goles_local is not none %}
           {{ r.goles_local }}–{{ r.goles_visitante }}
+        {% elif d %}<span class="text-danger">⚔️</span>
         {% else %}<span class="text-muted">vs</span>{% endif %}
       </div>
       <div class="text-end" style="width:42%">

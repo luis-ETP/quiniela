@@ -163,12 +163,14 @@ async def set_apuesta(request: Request, match_num: int, monto: float = Form(...)
         execute("UPDATE duelos SET apuesta2 = %s WHERE match_numero = %s", (monto, match_num))
 
     # Redirect back to correct phase
-    result = query("SELECT fase FROM results WHERE match_numero = %s", (match_num,))
-    fase = result[0]["fase"] if result else "Grupos"
-    # Find fase from fixture
-    from data import MATCHES_BY_NUM
-    if match_num in MATCHES_BY_NUM:
-        fase = MATCHES_BY_NUM[match_num]["fase"]
+    from data import MATCHES_BY_NUM as MBN
+    fase = "Grupos"
+    if match_num in MBN:
+        fase = MBN[match_num]["fase"]
+    else:
+        result = query("SELECT fase FROM results WHERE match_numero = %s", (match_num,))
+        if result:
+            fase = result[0]["fase"]
     return RedirectResponse(f"/matches?phase={fase}", status_code=302)
 
 
