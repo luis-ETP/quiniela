@@ -37,12 +37,17 @@
         <div class="text-muted" style="font-size:0.65rem">{{ user_names.get(m.owner_local, m.owner_local) }}</div>
         {% endif %}
       </div>
+
       <div class="text-center fw-bold" style="width:16%">
         {% if r and r.goles_local is not none %}
           {{ r.goles_local }}–{{ r.goles_visitante }}
-        {% elif d %}<span class="text-danger">⚔️</span>
-        {% else %}<span class="text-muted">vs</span>{% endif %}
+        {% else %}
+          <span class="{% if d %}text-danger{% else %}text-muted{% endif %}">
+            {% if d %}⚔️{% else %}vs{% endif %}
+          </span>
+        {% endif %}
       </div>
+
       <div class="text-end" style="width:42%">
         <span class="fw-semibold small {% if r and r.avanza == 'visitante' %}text-success{% endif %}
                      {% if m.get('es_fixture') %}text-muted fst-italic{% endif %}">
@@ -62,17 +67,15 @@
     </div>
     {% endif %}
 
-    <!-- Duelo section -->
+    <!-- Duelo apuestas -->
     {% if d %}
     <div class="mt-2 pt-2 border-top">
-      <div class="d-flex align-items-center justify-content-between mb-1">
-        <span class="badge bg-danger" style="font-size:0.65rem">⚔️ DUELO</span>
-        {% if d.ganador_username %}
-          <span class="badge bg-success" style="font-size:0.65rem">
-            💰 Ganó {{ user_names.get(d.ganador_username, d.ganador_username) }}
-          </span>
-        {% endif %}
+
+      {% if d.ganador_username %}
+      <div class="text-center mb-1">
+        <span class="badge bg-success" style="font-size:0.65rem">💰 Ganó {{ user_names.get(d.ganador_username, d.ganador_username) }}</span>
       </div>
+      {% endif %}
 
       <div class="d-flex justify-content-between align-items-start" style="font-size:0.78rem">
         <!-- Owner 1 -->
@@ -81,7 +84,7 @@
           {% if d.apuesta1 is not none %}
             <div class="text-success fw-bold">${{ "%.0f"|format(d.apuesta1) }} MXN</div>
           {% else %}
-            <div class="text-muted fst-italic">Sin apuesta</div>
+            <div class="text-muted fst-italic small">Sin apuesta</div>
           {% endif %}
           {% if user.username == d.owner1_username and not d.ganador_username %}
           <form method="post" action="/duelo/{{ m.numero }}/apuesta" class="mt-1 d-flex gap-1">
@@ -101,7 +104,7 @@
           {% if d.apuesta2 is not none %}
             <div class="text-success fw-bold">${{ "%.0f"|format(d.apuesta2) }} MXN</div>
           {% else %}
-            <div class="text-muted fst-italic">Sin apuesta</div>
+            <div class="text-muted fst-italic small">Sin apuesta</div>
           {% endif %}
           {% if user.username == d.owner2_username and not d.ganador_username %}
           <form method="post" action="/duelo/{{ m.numero }}/apuesta" class="mt-1 d-flex gap-1 justify-content-end">
@@ -118,7 +121,6 @@
       <div class="text-center mt-1" style="font-size:0.72rem">
         <span class="text-muted">En juego:</span>
         <span class="fw-bold text-danger">${{ "%.0f"|format([d.apuesta1, d.apuesta2]|min) }} MXN</span>
-        <span class="text-muted">(el menor de los dos montos)</span>
       </div>
       {% endif %}
     </div>
