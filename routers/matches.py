@@ -3,7 +3,20 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from auth import get_current_user
 from database import query, execute
-from data import MATCHES_BY_NUM, TEAMS, KNOCKOUT_FIXTURE
+from data import MATCHES_BY_NUM, TEAMS, KNOCKOUT_FIXTURE, KICKOFF_CDMX
+from datetime import datetime
+import pytz
+
+CDMX = pytz.timezone("America/Mexico_City")
+
+def is_match_locked(match_num: int) -> bool:
+    """Returns True if match has already kicked off (betting closed)."""
+    kickoff_str = KICKOFF_CDMX.get(match_num)
+    if not kickoff_str:
+        return False
+    kickoff = CDMX.localize(datetime.fromisoformat(kickoff_str))
+    now = datetime.now(CDMX)
+    return now >= kickoff
 from flags import flag_url, normalize
 import httpx, os
 
@@ -111,6 +124,8 @@ async def matches_page(request: Request, phase: str = "Grupos"):
             mc["duelo"] = all_duelos.get(m["numero"]) if (owner_local and owner_visitante and owner_local != owner_visitante) else None
             mc["owner_local"] = owner_local
             mc["owner_visitante"] = owner_visitante
+            mc["locked"] = is_match_locked(m["numero"])
+            mc["kickoff"] = KICKOFF_CDMX.get(m["numero"], "")
             match_list.append(mc)
     else:
         match_list = []
@@ -150,6 +165,8 @@ async def matches_page(request: Request, phase: str = "Grupos"):
                 "duelo": duelo,
                 "owner_local": owner_local,
                 "owner_visitante": owner_visitante,
+                "locked": is_match_locked(num),
+                "kickoff": KICKOFF_CDMX.get(num, ""),
             })
         match_list.sort(key=lambda x: (x["fecha"], x["numero"]))
 
@@ -180,6 +197,10 @@ async def set_apuesta(request: Request, match_num: int, monto: float = Form(...)
     duelo = duelo[0]
 
     # Only the owners can bet
+    if is_match_locked(match_num):
+        from data import MATCHES_BY_NUM as MBN3
+        fase = MATCHES_BY_NUM.get(match_num, {}).get("fase", "Grupos")
+        return RedirectResponse(f"/matches?phase={fase}", status_code=302)
     if monto < 20 or monto > 100:
         fase = "Grupos"
         from data import MATCHES_BY_NUM as MBN2
