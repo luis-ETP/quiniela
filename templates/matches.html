@@ -73,50 +73,48 @@
     </div>
     {% endif %}
 
-    <!-- Duelo section — only shown when both teams have owners -->
     {% if d %}
     <div class="mt-2 pt-2 border-top">
+      {% set a1 = d.apuesta1 if d.apuesta1 is not none else 0 %}
+      {% set a2 = d.apuesta2 if d.apuesta2 is not none else 0 %}
+      {% set monto = [a1, a2]|min if (a1 and a2) else (a1 or a2) %}
+      <div class="d-flex justify-content-between align-items-center" style="font-size:0.75rem">
 
-      <!-- Swords header -->
-      <div class="text-center mb-1" style="font-size:0.72rem;color:#dc3545;font-weight:600">
-        ⚔️
-        {% if d.ganador_username %}
-          · <span class="text-success">💰 Ganó {{ user_names.get(d.ganador_username, d.ganador_username) }}</span>
-        {% endif %}
-      </div>
-
-      <div class="d-flex justify-content-between align-items-start" style="font-size:0.78rem">
         <!-- Owner 1 -->
-        <div style="width:45%">
-          <div class="fw-semibold">{{ user_names.get(d.owner1_username, d.owner1_username) }}</div>
-          {% if d.apuesta1 is not none %}
-            <div class="text-success fw-bold">${{ "%.0f"|format(d.apuesta1) }} MXN</div>
-          {% else %}
-            <div class="text-muted fst-italic small">Sin apuesta</div>
+        <div style="width:38%">
+          {% if d.ganador_username == d.owner1_username %}
+            <div class="fw-bold text-success">{{ user_names.get(d.owner1_username, d.owner1_username) }}</div>
+            <div class="fw-bold text-success">${{ "%.0f"|format(monto) }}</div>
+          {% elif not d.ganador_username %}
+            <div class="text-muted small">{{ user_names.get(d.owner1_username, d.owner1_username) }}</div>
+            {% if d.apuesta1 is not none %}<div class="text-muted" style="font-size:0.65rem">${{ "%.0f"|format(d.apuesta1) }}</div>{% endif %}
           {% endif %}
-
         </div>
 
-        <div class="text-center text-muted" style="width:10%;font-size:0.7rem">vs</div>
+        <!-- Center -->
+        <div class="text-center" style="width:24%">
+          {% if d.ganador_username %}
+            <div style="font-size:0.9rem">✅</div>
+          {% else %}
+            <div style="font-size:1rem">💰</div>
+            {% if a1 and a2 %}
+            <div class="fw-bold text-danger" style="font-size:0.72rem">${{ "%.0f"|format([a1,a2]|min) }}</div>
+            {% endif %}
+          {% endif %}
+        </div>
 
         <!-- Owner 2 -->
-        <div class="text-end" style="width:45%">
-          <div class="fw-semibold">{{ user_names.get(d.owner2_username, d.owner2_username) }}</div>
-          {% if d.apuesta2 is not none %}
-            <div class="text-success fw-bold">${{ "%.0f"|format(d.apuesta2) }} MXN</div>
-          {% else %}
-            <div class="text-muted fst-italic small">Sin apuesta</div>
+        <div class="text-end" style="width:38%">
+          {% if d.ganador_username == d.owner2_username %}
+            <div class="fw-bold text-success">{{ user_names.get(d.owner2_username, d.owner2_username) }}</div>
+            <div class="fw-bold text-success">${{ "%.0f"|format(monto) }}</div>
+          {% elif not d.ganador_username %}
+            <div class="text-muted small">{{ user_names.get(d.owner2_username, d.owner2_username) }}</div>
+            {% if d.apuesta2 is not none %}<div class="text-muted" style="font-size:0.65rem">${{ "%.0f"|format(d.apuesta2) }}</div>{% endif %}
           {% endif %}
-
         </div>
-      </div>
 
-      {% if d.apuesta1 and d.apuesta2 %}
-      <div class="text-center mt-1" style="font-size:0.72rem">
-        <span class="text-muted">En juego:</span>
-        <span class="fw-bold text-danger">${{ "%.0f"|format([d.apuesta1, d.apuesta2]|min) }} MXN</span>
       </div>
-      {% endif %}
     </div>
     {% endif %}
 
