@@ -77,41 +77,37 @@
     <div class="mt-2 pt-2 border-top">
       {% set a1 = d.apuesta1 if d.apuesta1 is not none else 0 %}
       {% set a2 = d.apuesta2 if d.apuesta2 is not none else 0 %}
-      {% set monto = [a1, a2]|min if (a1 and a2) else (a1 or a2) %}
+      {% set monto = [a1, a2]|min if (a1 and a2) else 0 %}
       <div class="d-flex justify-content-between align-items-center" style="font-size:0.75rem">
 
         <!-- Owner 1 -->
         <div style="width:38%">
           {% if d.ganador_username == d.owner1_username %}
             <div class="fw-bold text-success">{{ user_names.get(d.owner1_username, d.owner1_username) }}</div>
-            <div class="fw-bold text-success">${{ "%.0f"|format(monto) }}</div>
-          {% elif not d.ganador_username %}
-            <div class="text-muted small">{{ user_names.get(d.owner1_username, d.owner1_username) }}</div>
-            {% if d.apuesta1 is not none %}<div class="text-muted" style="font-size:0.65rem">${{ "%.0f"|format(d.apuesta1) }}</div>{% endif %}
+          {% elif d.ganador_username == d.owner2_username %}
+            <div class="text-muted">{{ user_names.get(d.owner1_username, d.owner1_username) }}</div>
+          {% else %}
+            <div class="small">{{ user_names.get(d.owner1_username, d.owner1_username) }}</div>
           {% endif %}
+          <div class="text-muted" style="font-size:0.65rem">${{ "%.0f"|format(a1) }}</div>
         </div>
 
         <!-- Center -->
         <div class="text-center" style="width:24%">
-          {% if d.ganador_username %}
-            <div style="font-size:0.9rem">✅</div>
-          {% else %}
-            <div style="font-size:1rem">💰</div>
-            {% if a1 and a2 %}
-            <div class="fw-bold text-danger" style="font-size:0.72rem">${{ "%.0f"|format([a1,a2]|min) }}</div>
-            {% endif %}
-          {% endif %}
+          <div style="font-size:1rem">💰</div>
+          <div class="fw-bold" style="font-size:0.72rem;color:#000">${{ "%.0f"|format(monto) }}</div>
         </div>
 
         <!-- Owner 2 -->
         <div class="text-end" style="width:38%">
           {% if d.ganador_username == d.owner2_username %}
             <div class="fw-bold text-success">{{ user_names.get(d.owner2_username, d.owner2_username) }}</div>
-            <div class="fw-bold text-success">${{ "%.0f"|format(monto) }}</div>
-          {% elif not d.ganador_username %}
-            <div class="text-muted small">{{ user_names.get(d.owner2_username, d.owner2_username) }}</div>
-            {% if d.apuesta2 is not none %}<div class="text-muted" style="font-size:0.65rem">${{ "%.0f"|format(d.apuesta2) }}</div>{% endif %}
+          {% elif d.ganador_username == d.owner1_username %}
+            <div class="text-muted">{{ user_names.get(d.owner2_username, d.owner2_username) }}</div>
+          {% else %}
+            <div class="small">{{ user_names.get(d.owner2_username, d.owner2_username) }}</div>
           {% endif %}
+          <div class="text-muted" style="font-size:0.65rem">${{ "%.0f"|format(a2) }}</div>
         </div>
 
       </div>
