@@ -139,28 +139,31 @@
       </div>
 
       <!-- Bet amounts -->
+      {% set a1 = d.apuesta1 if d.apuesta1 is not none else 0 %}
+      {% set a2 = d.apuesta2 if d.apuesta2 is not none else 0 %}
+      {% set monto = [a1, a2]|min if (a1 and a2) else 0 %}
       <div class="d-flex justify-content-between" style="font-size:0.78rem">
         <div>
           <div class="text-muted small">{{ user_names.get(d.owner1_username, d.owner1_username) }}</div>
-          {% if d.apuesta1 is not none %}
-            <span class="fw-bold text-success">${{ "%.0f"|format(d.apuesta1) }}</span>
-          {% else %}
-            <span class="text-muted fst-italic">Sin apuesta</span>
-          {% endif %}
+          <span>${{ "%.0f"|format(a1) }}</span>
+        </div>
+        <div class="text-center">
+          <div class="fw-bold" style="font-size:0.8rem">💰${{ "%.0f"|format(monto) }}</div>
         </div>
         <div class="text-end">
           <div class="text-muted small">{{ user_names.get(d.owner2_username, d.owner2_username) }}</div>
-          {% if d.apuesta2 is not none %}
-            <span class="fw-bold text-success">${{ "%.0f"|format(d.apuesta2) }}</span>
-          {% else %}
-            <span class="text-muted fst-italic">Sin apuesta</span>
-          {% endif %}
+          <span>${{ "%.0f"|format(a2) }}</span>
         </div>
       </div>
 
-      {% if d.apuesta1 and d.apuesta2 %}
-      <div class="text-center mt-1" style="font-size:0.7rem">
-        En juego: <span class="fw-bold text-danger">${{ "%.0f"|format([d.apuesta1, d.apuesta2]|min) }} MXN</span>
+      <!-- Result -->
+      {% if d.ganador_username %}
+      <div class="text-center mt-1 fw-bold" style="font-size:0.82rem">
+        {% if d.ganador_username == user.username %}
+          <span class="text-success">Ganaste ${{ "%.0f"|format(monto) }}</span>
+        {% else %}
+          <span class="text-danger">Perdiste ${{ "%.0f"|format(monto) }}</span>
+        {% endif %}
       </div>
       {% endif %}
 

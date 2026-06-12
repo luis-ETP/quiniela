@@ -82,32 +82,27 @@
 
         <!-- Owner 1 -->
         <div style="width:38%">
+          <div class="small">{{ user_names.get(d.owner1_username, d.owner1_username) }}</div>
           {% if d.ganador_username == d.owner1_username %}
-            <div class="fw-bold text-success">{{ user_names.get(d.owner1_username, d.owner1_username) }}</div>
+            <div class="fw-bold text-success" style="font-size:0.72rem">${{ "%.0f"|format(monto) }}</div>
           {% elif d.ganador_username == d.owner2_username %}
-            <div class="text-muted">{{ user_names.get(d.owner1_username, d.owner1_username) }}</div>
-          {% else %}
-            <div class="small">{{ user_names.get(d.owner1_username, d.owner1_username) }}</div>
+            <div class="fw-bold text-danger" style="font-size:0.72rem">-${{ "%.0f"|format(monto) }}</div>
           {% endif %}
-          <div class="text-muted" style="font-size:0.65rem">${{ "%.0f"|format(a1) }}</div>
         </div>
 
-        <!-- Center -->
+        <!-- Center: 💰$X -->
         <div class="text-center" style="width:24%">
-          <div style="font-size:1rem">💰</div>
-          <div class="fw-bold" style="font-size:0.72rem;color:#000">${{ "%.0f"|format(monto) }}</div>
+          <div class="fw-bold" style="font-size:0.8rem">💰${{ "%.0f"|format(monto) }}</div>
         </div>
 
         <!-- Owner 2 -->
         <div class="text-end" style="width:38%">
+          <div class="small">{{ user_names.get(d.owner2_username, d.owner2_username) }}</div>
           {% if d.ganador_username == d.owner2_username %}
-            <div class="fw-bold text-success">{{ user_names.get(d.owner2_username, d.owner2_username) }}</div>
+            <div class="fw-bold text-success" style="font-size:0.72rem">${{ "%.0f"|format(monto) }}</div>
           {% elif d.ganador_username == d.owner1_username %}
-            <div class="text-muted">{{ user_names.get(d.owner2_username, d.owner2_username) }}</div>
-          {% else %}
-            <div class="small">{{ user_names.get(d.owner2_username, d.owner2_username) }}</div>
+            <div class="fw-bold text-danger" style="font-size:0.72rem">-${{ "%.0f"|format(monto) }}</div>
           {% endif %}
-          <div class="text-muted" style="font-size:0.65rem">${{ "%.0f"|format(a2) }}</div>
         </div>
 
       </div>
