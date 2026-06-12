@@ -18,23 +18,7 @@ FLAG_CODES = {
     "Cape Verde": "cv", "Haiti": "ht", "Curaçao": "cw",
 }
 
-API_NAME_MAP = {
-    "Korea Republic": "South Korea",
-    "Republic of Korea": "South Korea",
-    "Czech Republic": "Czechia",
-    "Ivory Coast": "Côte d'Ivoire",
-    "Turkey": "Türkiye",
-    "IR Iran": "Iran",
-    "USA": "United States",
-    "Curacao": "Curaçao",
-    "Congo DR": "DR Congo",
-    "Democratic Republic of Congo": "DR Congo",
-    "Cabo Verde": "Cape Verde",
-    "Bosnia-Herzegovina": "Bosnia and Herzegovina",
-    "Bosnia & Herzegovina": "Bosnia and Herzegovina",
-    "Korea Republic": "South Korea",
-    "Republic of Korea": "South Korea",
-}
+
 
 def normalize(name):
     if not name:
@@ -52,3 +36,28 @@ def flag_img(name):
     if not url:
         return ""
     return f'<img src="{url}" width="24" height="18" style="vertical-align:middle;margin-right:4px" alt="{name}">'
+
+API_NAME_MAP = {
+    # Bosnia variations
+    "Bosnia-Herzegovina": "Bosnia and Herzegovina",
+    "Bosnia & Herzegovina": "Bosnia and Herzegovina",
+    "Bosnia and Herz.": "Bosnia and Herzegovina",
+    # Korea variations  
+    "Korea Republic": "South Korea",
+    "Republic of Korea": "South Korea",
+    "Korea DPR": "South Korea",
+    # Others
+    "Czech Republic": "Czechia",
+    "Ivory Coast": "Côte d''Ivoire",
+    "Côte d''Ivoire": "Côte d''Ivoire",
+    "Turkey": "Türkiye",
+    "IR Iran": "Iran",
+    "USA": "United States",
+    "Curacao": "Curaçao",
+    "Congo DR": "DR Congo",
+    "Democratic Republic of Congo": "DR Congo",
+    "DR Congo": "DR Congo",
+    "Cabo Verde": "Cape Verde",
+    "Saudi Arabia": "Saudi Arabia",
+    "New Zealand": "New Zealand",
+}
