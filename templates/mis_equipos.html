@@ -38,15 +38,19 @@
             <div class="text-muted small">Grupo {{ t.grupo }} · FIFA #{{ t.ranking_fifa }}</div>
             <hr class="my-2">
             <div class="row text-center">
-              <div class="col-4">
+              <div class="col-3">
                 <div class="fw-bold fs-5">{{ t.victorias }}</div>
                 <div class="text-muted" style="font-size:0.7rem">Victorias</div>
               </div>
-              <div class="col-4">
+              <div class="col-3">
                 <div class="fw-bold fs-5">{{ t.empates }}</div>
                 <div class="text-muted" style="font-size:0.7rem">Empates</div>
               </div>
-              <div class="col-4">
+              <div class="col-3">
+                <div class="fw-bold fs-5">{{ t.derrotas }}</div>
+                <div class="text-muted" style="font-size:0.7rem">Derrotas</div>
+              </div>
+              <div class="col-3">
                 <div class="fw-bold fs-5 text-success">{{ "%.1f"|format(t.pts) }}</div>
                 <div class="text-muted" style="font-size:0.7rem">Puntos</div>
               </div>
@@ -73,8 +77,8 @@
         <div class="text-muted small">Empates</div>
       </div>
       <div class="col-3">
-        <div class="fw-bold fs-4 text-success">{{ "%.2f"|format(pts_cd) }}</div>
-        <div class="text-muted small">Pts C+D</div>
+        <div class="fw-bold fs-4">{{ total_derrotas }}</div>
+        <div class="text-muted small">Derrotas</div>
       </div>
       <div class="col-3">
         <div class="fw-bold fs-4 text-primary">{{ "%.2f"|format(pts_total) }}</div>

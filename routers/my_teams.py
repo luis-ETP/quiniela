@@ -33,24 +33,34 @@ async def mis_equipos(request: Request):
     pts_by_team = {}
     vic_by_team = {}
     emp_by_team = {}
+    der_by_team = {}
     for r in results:
+        gl = r.get("goles_local")
+        gv = r.get("goles_visitante")
+        if gl is None or gv is None:
+            continue
+        gl, gv = int(gl), int(gv)
         for team, side in [(r.get("local",""), "local"), (r.get("visitante",""), "visitante")]:
             if not team: continue
             pts_by_team.setdefault(team, 0.0)
             vic_by_team.setdefault(team, 0)
             emp_by_team.setdefault(team, 0)
+            der_by_team.setdefault(team, 0)
             pts = float(r.get(f"pts_{side}") or 0)
             pts_by_team[team] += pts
             if r["fase"] == "Grupos":
-                gl, gv = r.get("goles_local") or 0, r.get("goles_visitante") or 0
                 if side == "local":
                     if gl > gv: vic_by_team[team] += 1
                     elif gl == gv: emp_by_team[team] += 1
+                    else: der_by_team[team] += 1
                 else:
                     if gv > gl: vic_by_team[team] += 1
                     elif gv == gl: emp_by_team[team] += 1
+                    else: der_by_team[team] += 1
             elif r.get("avanza") == side:
                 vic_by_team[team] += 1
+            elif r.get("avanza") and r.get("avanza") != side:
+                der_by_team[team] += 1
 
     picks_by_bombo = {}
     for p in picks:
@@ -65,12 +75,14 @@ async def mis_equipos(request: Request):
             "pts": round(pts_by_team.get(tname, 0), 2),
             "victorias": vic_by_team.get(tname, 0),
             "empates": emp_by_team.get(tname, 0),
+            "derrotas": der_by_team.get(tname, 0),
         }
 
     pts_total = sum(t["pts"] for t in picks_by_bombo.values())
     pts_cd = sum(t["pts"] for b, t in picks_by_bombo.items() if b in ("C","D"))
     total_victorias = sum(t["victorias"] for t in picks_by_bombo.values())
     total_empates = sum(t["empates"] for t in picks_by_bombo.values())
+    total_derrotas = sum(t["derrotas"] for t in picks_by_bombo.values())
 
     # Duelos — fetch all where user is owner
     duelos = query("""
@@ -130,6 +142,7 @@ async def mis_equipos(request: Request):
         "pts_cd": round(pts_cd, 2),
         "total_victorias": total_victorias,
         "total_empates": total_empates,
+        "total_derrotas": total_derrotas,
         "duelos": duelos_display,
         "balance": round(balance, 2),
         "user_names": user_names,
