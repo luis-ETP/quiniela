@@ -83,10 +83,14 @@
         <!-- Owner 1 -->
         <div style="width:38%">
           <div class="small">{{ user_names.get(d.owner1_username, d.owner1_username) }}</div>
-          {% if d.ganador_username == d.owner1_username %}
-            <div class="fw-bold text-success" style="font-size:0.72rem">${{ "%.0f"|format(monto) }}</div>
-          {% elif d.ganador_username == d.owner2_username %}
-            <div class="fw-bold text-danger" style="font-size:0.72rem">-${{ "%.0f"|format(monto) }}</div>
+          {% if d.ganador_username and monto > 0 %}
+            {% if d.ganador_username == d.owner1_username %}
+              <div class="fw-bold text-success" style="font-size:0.72rem">${{ "%.0f"|format(monto) }}</div>
+            {% elif d.ganador_username == d.owner2_username %}
+              <div class="fw-bold text-danger" style="font-size:0.72rem">-${{ "%.0f"|format(monto) }}</div>
+            {% endif %}
+          {% elif d.ganador_username %}
+            <div class="fw-bold" style="font-size:0.72rem">$0</div>
           {% endif %}
         </div>
 
@@ -98,10 +102,14 @@
         <!-- Owner 2 -->
         <div class="text-end" style="width:38%">
           <div class="small">{{ user_names.get(d.owner2_username, d.owner2_username) }}</div>
-          {% if d.ganador_username == d.owner2_username %}
-            <div class="fw-bold text-success" style="font-size:0.72rem">${{ "%.0f"|format(monto) }}</div>
-          {% elif d.ganador_username == d.owner1_username %}
-            <div class="fw-bold text-danger" style="font-size:0.72rem">-${{ "%.0f"|format(monto) }}</div>
+          {% if d.ganador_username and monto > 0 %}
+            {% if d.ganador_username == d.owner2_username %}
+              <div class="fw-bold text-success" style="font-size:0.72rem">${{ "%.0f"|format(monto) }}</div>
+            {% elif d.ganador_username == d.owner1_username %}
+              <div class="fw-bold text-danger" style="font-size:0.72rem">-${{ "%.0f"|format(monto) }}</div>
+            {% endif %}
+          {% elif d.ganador_username %}
+            <div class="fw-bold" style="font-size:0.72rem">$0</div>
           {% endif %}
         </div>
 

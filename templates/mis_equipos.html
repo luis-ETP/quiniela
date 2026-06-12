@@ -159,7 +159,9 @@
       <!-- Result -->
       {% if d.ganador_username %}
       <div class="text-center mt-1 fw-bold" style="font-size:0.82rem">
-        {% if d.ganador_username == user.username %}
+        {% if monto == 0 %}
+          <span>$0</span>
+        {% elif d.ganador_username == user.username %}
           <span class="text-success">Ganaste ${{ "%.0f"|format(monto) }}</span>
         {% else %}
           <span class="text-danger">Perdiste ${{ "%.0f"|format(monto) }}</span>
