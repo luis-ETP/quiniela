@@ -45,27 +45,29 @@ async def standings_page(request: Request):
             gl = r.get("goles_local") or 0
             gv = r.get("goles_visitante") or 0
 
+            finished = r.get("goles_local") is not None and r.get("goles_visitante") is not None
+
             if local in my_teams:
                 pts = float(r.get("pts_local") or 0)
                 pts_by_team[local] = pts_by_team.get(local, 0) + pts
                 pts_total += pts
-                if r["fase"] == "Grupos":
+                if finished and r["fase"] == "Grupos":
                     if gl > gv: victorias += 1
                     elif gl == gv: empates += 1
                     else: derrotas += 1
-                elif r.get("avanza") == "local": victorias += 1
-                elif r.get("avanza") == "visitante" and r.get("avanza"): derrotas += 1
+                elif finished and r.get("avanza") == "local": victorias += 1
+                elif finished and r.get("avanza") == "visitante": derrotas += 1
 
             if visitante in my_teams:
                 pts = float(r.get("pts_visitante") or 0)
                 pts_by_team[visitante] = pts_by_team.get(visitante, 0) + pts
                 pts_total += pts
-                if r["fase"] == "Grupos":
+                if finished and r["fase"] == "Grupos":
                     if gv > gl: victorias += 1
                     elif gv == gl: empates += 1
                     else: derrotas += 1
-                elif r.get("avanza") == "visitante": victorias += 1
-                elif r.get("avanza") == "local" and r.get("avanza"): derrotas += 1
+                elif finished and r.get("avanza") == "visitante": victorias += 1
+                elif finished and r.get("avanza") == "local": derrotas += 1
 
         pts_cd = sum(pts_by_team.get(t, 0) for t, td in my_teams.items() if td and td["bombo"] in ("C", "D"))
         pts_d  = sum(pts_by_team.get(t, 0) for t, td in my_teams.items() if td and td["bombo"] == "D")
@@ -77,22 +79,25 @@ async def standings_page(request: Request):
             for r in results:
                 local = r.get("local", "")
                 visitante = r.get("visitante", "")
-                gl = r.get("goles_local") or 0
-                gv = r.get("goles_visitante") or 0
+                gl = r.get("goles_local")
+                gv = r.get("goles_visitante")
+                if gl is None or gv is None:
+                    continue
+                gl, gv = int(gl), int(gv)
                 if local == tname:
                     if r["fase"] == "Grupos":
                         if gl > gv: tv += 1
                         elif gl == gv: ve += 1
                         else: tp += 1
                     elif r.get("avanza") == "local": tv += 1
-                    elif r.get("avanza") == "visitante" and r.get("avanza"): tp += 1
+                    elif r.get("avanza") == "visitante": tp += 1
                 elif visitante == tname:
                     if r["fase"] == "Grupos":
                         if gv > gl: tv += 1
                         elif gv == gl: ve += 1
                         else: tp += 1
                     elif r.get("avanza") == "visitante": tv += 1
-                    elif r.get("avanza") == "local" and r.get("avanza"): tp += 1
+                    elif r.get("avanza") == "local": tp += 1
             team_stats[tname] = {"v": tv, "e": ve, "p": tp}
 
         standings.append({
