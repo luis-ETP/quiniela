@@ -30,6 +30,10 @@ API_NAME_MAP = {
     "Congo DR": "DR Congo",
     "Democratic Republic of Congo": "DR Congo",
     "Cabo Verde": "Cape Verde",
+    "Bosnia-Herzegovina": "Bosnia and Herzegovina",
+    "Bosnia & Herzegovina": "Bosnia and Herzegovina",
+    "Korea Republic": "South Korea",
+    "Republic of Korea": "South Korea",
 }
 
 def normalize(name):
