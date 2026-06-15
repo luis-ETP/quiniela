@@ -58,6 +58,9 @@ API_NAME_MAP = {
     "Democratic Republic of Congo": "DR Congo",
     "DR Congo": "DR Congo",
     "Cabo Verde": "Cape Verde",
+    "Côte d'Ivoire": "Côte d'Ivoire",
+    "Cote d'Ivoire": "Côte d'Ivoire",
+    "Ivory Coast": "Côte d'Ivoire",
     "Saudi Arabia": "Saudi Arabia",
     "New Zealand": "New Zealand",
 }
