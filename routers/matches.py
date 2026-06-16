@@ -254,3 +254,26 @@ async def _sync_results():
                     avanza=EXCLUDED.avanza, pts_local=EXCLUDED.pts_local,
                     pts_visitante=EXCLUDED.pts_visitante
             """, (match_num, fase, home, away, gl, gv, avanza, pts_local, pts_visitante))
+
+
+@router.get("/debug/pronostico/{match_num}")
+async def debug_pronostico(request: Request, match_num: int):
+    from fastapi.responses import JSONResponse
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({"error": "not logged in"})
+    
+    # Get all pronosticos
+    all_pros = query("SELECT * FROM pronosticos")
+    match_pros = [p for p in all_pros if p["match_numero"] == match_num]
+    my_pros = [p for p in all_pros if p["username"] == user["username"]]
+    
+    return JSONResponse({
+        "user": user["username"],
+        "match_num": match_num,
+        "match_num_type": str(type(match_num)),
+        "all_pros_count": len(all_pros),
+        "match_pros": match_pros,
+        "my_pros_all_matches": my_pros,
+        "pros_by_match_keys": list(set(p["match_numero"] for p in all_pros)),
+    })
