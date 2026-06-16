@@ -171,9 +171,8 @@ async def matches_page(request: Request, phase: str = "Grupos"):
         match_list.sort(key=lambda x: (x["fecha"], x["numero"]))
 
     # Today's matches across all groups
-    from datetime import date
     import pytz
-    today = date.today().strftime("%Y-%m-%d")
+    today = datetime.now(pytz.timezone("America/Mexico_City")).strftime("%Y-%m-%d")
     today_matches = []
     for m in sorted(MATCHES_BY_NUM.values(), key=lambda x: (KICKOFF_CDMX.get(x["numero"], "99:99"), x["numero"])):
         if m["fecha"] != today:
