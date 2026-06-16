@@ -65,7 +65,7 @@ async def matches_page(request: Request, phase: str = "Grupos"):
     all_pros = query("SELECT * FROM pronosticos")
     pros_by_match = {}
     for p in all_pros:
-        pros_by_match.setdefault(p["match_numero"], []).append(p)
+        pros_by_match.setdefault(int(p["match_numero"]), []).append(p)
 
     from data import USERS
     user_names = {u: d["nombre"] for u, d in USERS.items()}
