@@ -66,7 +66,10 @@ async def save_pronostico(
             goles_visitante = EXCLUDED.goles_visitante
     """, (match_num, user["username"], goles_local, goles_visitante))
 
-    return RedirectResponse("/matches", status_code=302)
+    # Redirect back to correct phase
+    from data import MATCHES_BY_NUM
+    fase = MATCHES_BY_NUM.get(match_num, {}).get("fase", "Grupos")
+    return RedirectResponse(f"/matches?phase={fase}", status_code=302)
 
 
 def get_pronosticos_for_match(match_num, result=None):
