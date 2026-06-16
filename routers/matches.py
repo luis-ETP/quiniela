@@ -174,12 +174,12 @@ async def matches_page(request: Request, phase: str = "Grupos"):
 
 
 @router.get("/admin/sync-results")
-async def sync_results_get(request: Request):
+async def sync_results_get(request: Request, phase: str = "Grupos"):
     user = get_current_user(request)
-    if not user or not user.get("is_admin"):
+    if not user:
         return RedirectResponse("/login", status_code=302)
     await _sync_results()
-    return RedirectResponse("/matches", status_code=302)
+    return RedirectResponse(f"/matches?phase={phase}", status_code=302)
 
 
 @router.get("/admin/api-check")
