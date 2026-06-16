@@ -65,7 +65,8 @@ async def matches_page(request: Request, phase: str = "Grupos"):
     all_pros = query("SELECT * FROM pronosticos")
     pros_by_match = {}
     for p in all_pros:
-        pros_by_match.setdefault(int(p["match_numero"]), []).append(p)
+        key = str(p["match_numero"])
+        pros_by_match.setdefault(key, []).append(p)
 
     from data import USERS
     user_names = {u: d["nombre"] for u, d in USERS.items()}
@@ -88,7 +89,7 @@ async def matches_page(request: Request, phase: str = "Grupos"):
                 duelo["ganador_username"] = owner_local if r["avanza"] == "local" else owner_visitante
 
         # Pronosticos
-        match_pros = pros_by_match.get(num, [])
+        match_pros = pros_by_match.get(str(num), [])
         if locked and r and r.get("goles_local") is not None:
             for p in match_pros:
                 b = calc_bonus(p["goles_local"], p["goles_visitante"],
