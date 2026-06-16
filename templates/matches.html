@@ -73,6 +73,72 @@
     </div>
     {% endif %}
 
+    <!-- Pronostico -->
+    <div class="mt-2 pt-2 border-top">
+      {% if not locked %}
+        <!-- Before kickoff: show form -->
+        <form method="post" action="/pronostico/{{ m.numero }}" class="d-flex align-items-center gap-1" style="font-size:0.75rem">
+          <span class="text-muted">🔮</span>
+          <input type="number" name="goles_local" min="0" max="20"
+                 value="{{ mi_pronostico.goles_local if mi_pronostico else '' }}"
+                 placeholder="0" class="form-control form-control-sm text-center py-0" style="width:44px;font-size:0.75rem">
+          <span class="text-muted">–</span>
+          <input type="number" name="goles_visitante" min="0" max="20"
+                 value="{{ mi_pronostico.goles_visitante if mi_pronostico else '' }}"
+                 placeholder="0" class="form-control form-control-sm text-center py-0" style="width:44px;font-size:0.75rem">
+          <button class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size:0.7rem">
+            {% if mi_pronostico %}✓{% else %}Pronosticar{% endif %}
+          </button>
+          {% if mi_pronostico %}
+          <span class="text-muted" style="font-size:0.65rem">{{ mi_pronostico.goles_local }}-{{ mi_pronostico.goles_visitante }}</span>
+          {% endif %}
+        </form>
+      {% elif pronosticos %}
+        <!-- After kickoff: show collapsible -->
+        <div>
+          <!-- My result -->
+          {% set mp = mi_pronostico %}
+          {% if mp %}
+          <div class="d-flex justify-content-between align-items-center" style="font-size:0.72rem">
+            <span class="text-muted">🔮 Tu pronóstico: <strong>{{ mp.goles_local }}-{{ mp.goles_visitante }}</strong></span>
+            {% if mp.puntos_bonus is not none %}
+              {% set b = mp.puntos_bonus|float %}
+              <span class="fw-bold {% if b > 0 %}text-success{% elif b < 0 %}text-danger{% endif %}">
+                {% if b > 0 %}+{% endif %}{{ "%.2f"|format(b) }}
+              </span>
+            {% endif %}
+          </div>
+          {% else %}
+          <div style="font-size:0.72rem" class="text-muted">🔮 No pronosticaste</div>
+          {% endif %}
+          <!-- Expandable others -->
+          {% if pronosticos|length > 1 %}
+          <div>
+            <button class="btn btn-link p-0 mt-1" style="font-size:0.65rem;color:#999"
+                    onclick="this.nextElementSibling.classList.toggle('d-none');this.textContent=this.textContent.includes('Ver')? 'Ocultar pronósticos':'Ver todos los pronósticos'">
+              Ver todos los pronósticos
+            </button>
+            <div class="d-none mt-1">
+              {% for p in pronosticos %}
+              {% if p.username != user.username %}
+              <div class="d-flex justify-content-between" style="font-size:0.68rem">
+                <span class="text-muted">{{ user_names.get(p.username, p.username) }}: {{ p.goles_local }}-{{ p.goles_visitante }}</span>
+                {% if p.puntos_bonus is not none %}
+                  {% set b = p.puntos_bonus|float %}
+                  <span class="{% if b > 0 %}text-success{% elif b < 0 %}text-danger{% endif %}">
+                    {% if b > 0 %}+{% endif %}{{ "%.2f"|format(b) }}
+                  </span>
+                {% endif %}
+              </div>
+              {% endif %}
+              {% endfor %}
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      {% endif %}
+    </div>
+
     {% if d %}
     <div class="mt-2 pt-2 border-top">
       {% set a1 = d.apuesta1 if d.apuesta1 is not none else 0 %}

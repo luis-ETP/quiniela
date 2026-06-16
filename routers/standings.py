@@ -4,6 +4,7 @@ from fastapi.templating import Jinja2Templates
 from auth import get_current_user
 from database import query
 from data import USERS, TEAMS
+from routers.pronosticos import get_total_bonus_by_user
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
@@ -115,7 +116,12 @@ async def standings_page(request: Request):
             "lineup_completo": len(my_picks) == 4,
         })
 
-    standings.sort(key=lambda x: (-x["pts_total"], -x["victorias"], -x["pts_cd"], -x["pts_d"]))
+    bonus_by_user = get_total_bonus_by_user()
+    for s in standings:
+        s["bonus"] = round(bonus_by_user.get(s["username"], 0), 2)
+        s["pts_total_con_bonus"] = round(s["pts_total"] + s["bonus"], 2)
+
+    standings.sort(key=lambda x: (-x["pts_total_con_bonus"], -x["victorias"], -x["pts_cd"], -x["pts_d"]))
     for i, s in enumerate(standings):
         s["posicion"] = i + 1
 

@@ -4,6 +4,7 @@ from fastapi.templating import Jinja2Templates
 from auth import get_current_user
 from database import query, execute
 from data import MATCHES_BY_NUM, TEAMS, KNOCKOUT_FIXTURE, KICKOFF_CDMX
+from routers.pronosticos import get_pronosticos_for_match, is_locked as pro_locked
 from datetime import datetime
 import pytz
 
@@ -126,6 +127,8 @@ async def matches_page(request: Request, phase: str = "Grupos"):
             mc["owner_visitante"] = owner_visitante
             mc["locked"] = is_match_locked(m["numero"])
             mc["kickoff"] = KICKOFF_CDMX.get(m["numero"], "")
+            mc["pronosticos"] = get_pronosticos_for_match(m["numero"], mc["resultado"]) if mc["locked"] else []
+            mc["mi_pronostico"] = next((p for p in query("SELECT * FROM pronosticos WHERE match_numero = %s AND username = %s", (m["numero"], user["username"])) ), None) if not mc["locked"] else next((p for p in get_pronosticos_for_match(m["numero"], mc["resultado"]) if p["username"] == user["username"]), None)
             match_list.append(mc)
     else:
         match_list = []
@@ -167,6 +170,8 @@ async def matches_page(request: Request, phase: str = "Grupos"):
                 "owner_visitante": owner_visitante,
                 "locked": is_match_locked(num),
                 "kickoff": KICKOFF_CDMX.get(num, ""),
+                "pronosticos": get_pronosticos_for_match(num, r) if is_match_locked(num) else [],
+                "mi_pronostico": next((p for p in query("SELECT * FROM pronosticos WHERE match_numero = %s AND username = %s", (num, user["username"]))), None),
             })
         match_list.sort(key=lambda x: (x["fecha"], x["numero"]))
 
