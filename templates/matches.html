@@ -77,22 +77,35 @@
     <div class="mt-2 pt-2 border-top">
       {% if not locked %}
         <!-- Before kickoff: show form -->
+        {% if mi_pronostico %}
+        <!-- Already has pronostico - show in green with change button -->
+        <div class="d-flex align-items-center gap-1 mb-1" style="font-size:0.75rem">
+          <span>🔮</span>
+          <span class="badge bg-success">{{ mi_pronostico.goles_local }} – {{ mi_pronostico.goles_visitante }}</span>
+          <span class="text-muted" style="font-size:0.65rem">guardado</span>
+        </div>
+        <form method="post" action="/pronostico/{{ m.numero }}" class="d-flex align-items-center gap-1" style="font-size:0.75rem">
+          <input type="number" name="goles_local" min="0" max="20"
+                 value="{{ mi_pronostico.goles_local }}"
+                 class="form-control form-control-sm text-center py-0 border-success" style="width:44px;font-size:0.75rem">
+          <span class="text-muted">–</span>
+          <input type="number" name="goles_visitante" min="0" max="20"
+                 value="{{ mi_pronostico.goles_visitante }}"
+                 class="form-control form-control-sm text-center py-0 border-success" style="width:44px;font-size:0.75rem">
+          <button class="btn btn-sm btn-success py-0 px-2" style="font-size:0.7rem">Cambiar</button>
+        </form>
+        {% else %}
+        <!-- No pronostico yet -->
         <form method="post" action="/pronostico/{{ m.numero }}" class="d-flex align-items-center gap-1" style="font-size:0.75rem">
           <span class="text-muted">🔮</span>
           <input type="number" name="goles_local" min="0" max="20"
-                 value="{{ mi_pronostico.goles_local if mi_pronostico else '' }}"
                  placeholder="0" class="form-control form-control-sm text-center py-0" style="width:44px;font-size:0.75rem">
           <span class="text-muted">–</span>
           <input type="number" name="goles_visitante" min="0" max="20"
-                 value="{{ mi_pronostico.goles_visitante if mi_pronostico else '' }}"
                  placeholder="0" class="form-control form-control-sm text-center py-0" style="width:44px;font-size:0.75rem">
-          <button class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size:0.7rem">
-            {% if mi_pronostico %}✓{% else %}Pronosticar{% endif %}
-          </button>
-          {% if mi_pronostico %}
-          <span class="text-muted" style="font-size:0.65rem">{{ mi_pronostico.goles_local }}-{{ mi_pronostico.goles_visitante }}</span>
-          {% endif %}
+          <button class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size:0.7rem">Pronosticar</button>
         </form>
+        {% endif %}
       {% elif pronosticos %}
         <!-- After kickoff: show collapsible -->
         <div>
