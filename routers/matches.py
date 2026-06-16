@@ -229,7 +229,7 @@ async def _sync_results():
             return
         data = resp.json()
         for m in data.get("matches", []):
-            if m["status"] not in ("FINISHED", "IN_PLAY", "PAUSED"):
+            if m["status"] != "FINISHED":
                 continue
             home = normalize(m["homeTeam"]["name"])
             away = normalize(m["awayTeam"]["name"])
