@@ -97,3 +97,4 @@ def get_total_bonus_by_user():
         GROUP BY username
     """)
     return {r["username"]: float(r["total_bonus"]) for r in rows}
+# force redeploy Tue Jun 16 17:55:25 UTC 2026
