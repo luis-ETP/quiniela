@@ -4,25 +4,15 @@ from fastapi.templating import Jinja2Templates
 from auth import get_current_user
 from database import query, execute
 from data import MATCHES_BY_NUM, TEAMS, KNOCKOUT_FIXTURE, KICKOFF_CDMX
-from routers.pronosticos import get_pronosticos_for_match, is_locked as pro_locked
+from flags import flag_url, normalize
+from routers.pronosticos import calc_bonus
+import httpx, os
 from datetime import datetime
 import pytz
 
-CDMX = pytz.timezone("America/Mexico_City")
-
-def is_match_locked(match_num: int) -> bool:
-    """Returns True if match has already kicked off (betting closed)."""
-    kickoff_str = KICKOFF_CDMX.get(match_num)
-    if not kickoff_str:
-        return False
-    kickoff = CDMX.localize(datetime.fromisoformat(kickoff_str))
-    now = datetime.now(CDMX)
-    return now >= kickoff
-from flags import flag_url, normalize
-import httpx, os
-
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
+CDMX = pytz.timezone("America/Mexico_City")
 
 PHASES = ["Grupos","Ronda de 32","Octavos","Cuartos","Semifinal","Tercer lugar","Final"]
 
@@ -32,39 +22,29 @@ STAGE_MAP = {
     "SEMI_FINALS": "Semifinal", "THIRD_PLACE": "Tercer lugar", "FINAL": "Final",
 }
 
+def is_match_locked(match_num):
+    ks = KICKOFF_CDMX.get(match_num)
+    if not ks:
+        return False
+    return datetime.now(CDMX) >= CDMX.localize(datetime.fromisoformat(ks))
 
 def get_team_owners():
-    """Returns dict: team_nombre -> username"""
     picks = query("SELECT participant_username, team_nombre FROM picks")
     return {p["team_nombre"]: p["participant_username"] for p in picks}
 
-
-def get_or_create_duelo(match_num, local, visitante, owner_local, owner_visitante):
-    """Get existing duelo or create one."""
-    existing = query("SELECT * FROM duelos WHERE match_numero = %s", (match_num,))
-    if existing:
-        return existing[0]
-    execute("""
-        INSERT INTO duelos (match_numero, owner1_username, owner2_username, team1, team2)
-        VALUES (%s, %s, %s, %s, %s)
-        ON CONFLICT (match_numero) DO NOTHING
-    """, (match_num, owner_local, owner_visitante, local, visitante))
-    result = query("SELECT * FROM duelos WHERE match_numero = %s", (match_num,))
-    return result[0] if result else None
-
+def get_or_create_duelo(match_num, local, visitante, owner_local, owner_visitante, all_duelos):
+    if match_num in all_duelos:
+        return all_duelos[match_num]
+    execute("""INSERT INTO duelos (match_numero, owner1_username, owner2_username, team1, team2)
+        VALUES (%s,%s,%s,%s,%s) ON CONFLICT (match_numero) DO NOTHING""",
+        (match_num, owner_local, owner_visitante, local, visitante))
+    d = query("SELECT * FROM duelos WHERE match_numero = %s", (match_num,))
+    return d[0] if d else None
 
 def update_duelo_winner(match_num, avanza, owner_local, owner_visitante):
-    """Update duelo winner based on match result."""
-    if avanza == "local":
-        winner = owner_local
-    elif avanza == "visitante":
-        winner = owner_visitante
-    else:
-        winner = None
+    winner = owner_local if avanza == "local" else owner_visitante if avanza == "visitante" else None
     if winner:
-        execute("UPDATE duelos SET ganador_username = %s WHERE match_numero = %s",
-                (winner, match_num))
-
+        execute("UPDATE duelos SET ganador_username = %s WHERE match_numero = %s", (winner, match_num))
 
 @router.get("/matches", response_class=HTMLResponse)
 async def matches_page(request: Request, phase: str = "Grupos"):
@@ -77,58 +57,96 @@ async def matches_page(request: Request, phase: str = "Grupos"):
     except Exception:
         pass
 
+    # ── Batch load everything once ────────────────────────────────────────────
     results = query("SELECT * FROM results ORDER BY match_numero")
     results_by_num = {r["match_numero"]: r for r in results}
-    duelos_by_num = {d["match_numero"]: d for d in query("SELECT * FROM duelos")}
+
+    all_duelos = {d["match_numero"]: d for d in query("SELECT * FROM duelos")}
     owners = get_team_owners()
 
-    if phase == "Grupos":
-        # Batch: find all duelo-eligible matches upfront
-        duelo_candidates = []
-        for m in MATCHES_BY_NUM.values():
-            if m["fase"] != "Grupos":
-                continue
-            ol = owners.get(m["local"])
-            ov = owners.get(m["visitante"])
-            if ol and ov and ol != ov:
-                duelo_candidates.append((m["numero"], m["local"], m["visitante"], ol, ov))
+    # Batch load all pronosticos
+    all_pros = query("SELECT * FROM pronosticos")
+    pros_by_match = {}
+    for p in all_pros:
+        pros_by_match.setdefault(p["match_numero"], []).append(p)
 
-        # Bulk insert missing duelos
-        existing_nums = {d["match_numero"] for d in query("SELECT match_numero FROM duelos")}
-        for num, local, visitante, ol, ov in duelo_candidates:
+    from data import USERS
+    user_names = {u: d["nombre"] for u, d in USERS.items()}
+
+    def build_match_extras(num, local, visitante, r):
+        locked = is_match_locked(num)
+        owner_local = owners.get(local)
+        owner_visitante = owners.get(visitante)
+
+        # Duelo
+        duelo = None
+        if owner_local and owner_visitante and owner_local != owner_visitante:
+            duelo = all_duelos.get(num)
+            if not duelo:
+                duelo = get_or_create_duelo(num, local, visitante, owner_local, owner_visitante, all_duelos)
+                if duelo:
+                    all_duelos[num] = duelo
+            if duelo and r and r.get("avanza") and not duelo.get("ganador_username"):
+                update_duelo_winner(num, r["avanza"], owner_local, owner_visitante)
+                duelo["ganador_username"] = owner_local if r["avanza"] == "local" else owner_visitante
+
+        # Pronosticos
+        match_pros = pros_by_match.get(num, [])
+        if locked and r and r.get("goles_local") is not None:
+            for p in match_pros:
+                b = calc_bonus(p["goles_local"], p["goles_visitante"],
+                               r["goles_local"], r["goles_visitante"])
+                p["puntos_bonus"] = b
+
+        mi_pro = next((p for p in match_pros if p["username"] == user["username"]), None)
+        pronosticos = match_pros if locked else []
+
+        return {
+            "locked": locked,
+            "kickoff": KICKOFF_CDMX.get(num, ""),
+            "owner_local": owner_local,
+            "owner_visitante": owner_visitante,
+            "duelo": duelo,
+            "mi_pronostico": mi_pro,
+            "pronosticos": pronosticos,
+        }
+
+    if phase == "Grupos":
+        # Batch create missing duelos
+        duelo_candidates = [(m["numero"], m["local"], m["visitante"],
+                             owners.get(m["local"]), owners.get(m["visitante"]))
+                            for m in MATCHES_BY_NUM.values()
+                            if m["fase"] == "Grupos"
+                            and owners.get(m["local"]) and owners.get(m["visitante"])
+                            and owners.get(m["local"]) != owners.get(m["visitante"])]
+
+        existing_nums = set(all_duelos.keys())
+        for num, local, vis, ol, ov in duelo_candidates:
             if num not in existing_nums:
                 execute("""INSERT INTO duelos (match_numero, owner1_username, owner2_username, team1, team2)
                     VALUES (%s,%s,%s,%s,%s) ON CONFLICT (match_numero) DO NOTHING""",
-                    (num, ol, ov, local, visitante))
+                    (num, ol, ov, local, vis))
 
-        # Reload duelos once
-        all_duelos = {d["match_numero"]: d for d in query("SELECT * FROM duelos")}
-
-        # Update winners in bulk
-        for num, local, visitante, ol, ov in duelo_candidates:
-            d = all_duelos.get(num)
-            r = results_by_num.get(num)
-            if d and r and r.get("avanza") and not d.get("ganador_username"):
-                update_duelo_winner(num, r["avanza"], ol, ov)
-                d["ganador_username"] = ol if r["avanza"] == "local" else ov
+        all_duelos_fresh = {d["match_numero"]: d for d in query("SELECT * FROM duelos")}
 
         match_list = []
         for m in sorted(MATCHES_BY_NUM.values(), key=lambda x: (x["fecha"], x["numero"])):
             if m["fase"] != "Grupos":
                 continue
-            mc = m.copy()
-            mc["resultado"] = results_by_num.get(m["numero"])
-            mc["flag_local"] = flag_url(m["local"])
-            mc["flag_visitante"] = flag_url(m["visitante"])
-            owner_local = owners.get(m["local"])
-            owner_visitante = owners.get(m["visitante"])
-            mc["duelo"] = all_duelos.get(m["numero"]) if (owner_local and owner_visitante and owner_local != owner_visitante) else None
-            mc["owner_local"] = owner_local
-            mc["owner_visitante"] = owner_visitante
-            mc["locked"] = is_match_locked(m["numero"])
-            mc["kickoff"] = KICKOFF_CDMX.get(m["numero"], "")
-            mc["pronosticos"] = get_pronosticos_for_match(m["numero"], mc["resultado"]) if mc["locked"] else []
-            mc["mi_pronostico"] = next((p for p in query("SELECT * FROM pronosticos WHERE match_numero = %s AND username = %s", (m["numero"], user["username"])) ), None) if not mc["locked"] else next((p for p in get_pronosticos_for_match(m["numero"], mc["resultado"]) if p["username"] == user["username"]), None)
+            r = results_by_num.get(m["numero"])
+            extras = build_match_extras(m["numero"], m["local"], m["visitante"], r)
+            extras["duelo"] = all_duelos_fresh.get(m["numero"]) if (
+                extras["owner_local"] and extras["owner_visitante"] and
+                extras["owner_local"] != extras["owner_visitante"]) else None
+            if extras["duelo"] and r and r.get("avanza") and not extras["duelo"].get("ganador_username"):
+                ol = owners.get(m["local"])
+                ov = owners.get(m["visitante"])
+                update_duelo_winner(m["numero"], r["avanza"], ol, ov)
+                extras["duelo"]["ganador_username"] = ol if r["avanza"] == "local" else ov
+            mc = {**m, "resultado": r,
+                  "flag_local": flag_url(m["local"]),
+                  "flag_visitante": flag_url(m["visitante"]),
+                  **extras}
             match_list.append(mc)
     else:
         match_list = []
@@ -138,54 +156,22 @@ async def matches_page(request: Request, phase: str = "Grupos"):
             r = results_by_num.get(num)
             local_name = r["local"] if r else None
             vis_name = r["visitante"] if r else None
-            owner_local = owners.get(local_name) if local_name else None
-            owner_visitante = owners.get(vis_name) if vis_name else None
-            duelo = None
-            if owner_local and owner_visitante and owner_local != owner_visitante:
-                duelo = duelos_by_num.get(num)
-                if not duelo:
-                    execute("""INSERT INTO duelos (match_numero, owner1_username, owner2_username, team1, team2)
-                        VALUES (%s,%s,%s,%s,%s) ON CONFLICT (match_numero) DO NOTHING""",
-                        (num, owner_local, owner_visitante, local_name, vis_name))
-                    d = query("SELECT * FROM duelos WHERE match_numero = %s", (num,))
-                    duelo = d[0] if d else None
-                if duelo and r and r.get("avanza") and not duelo.get("ganador_username"):
-                    update_duelo_winner(num, r["avanza"], owner_local, owner_visitante)
-                    duelo["ganador_username"] = owner_local if r["avanza"] == "local" else owner_visitante
+            extras = build_match_extras(num, local_name or "", vis_name or "", r)
             match_list.append({
-                "numero": num,
-                "fecha": fecha,
-                "fase": fase,
-                "grupo": "",
-                "local": local_name or pos1,
-                "visitante": vis_name or pos2,
-                "local_label": local_name or pos1,
-                "visitante_label": vis_name or pos2,
+                "numero": num, "fecha": fecha, "fase": fase, "grupo": "",
+                "local": local_name or pos1, "visitante": vis_name or pos2,
+                "local_label": local_name or pos1, "visitante_label": vis_name or pos2,
                 "es_fixture": not bool(r),
                 "flag_local": flag_url(local_name) if local_name else "",
                 "flag_visitante": flag_url(vis_name) if vis_name else "",
-                "resultado": r,
-                "duelo": duelo,
-                "owner_local": owner_local,
-                "owner_visitante": owner_visitante,
-                "locked": is_match_locked(num),
-                "kickoff": KICKOFF_CDMX.get(num, ""),
-                "pronosticos": get_pronosticos_for_match(num, r) if is_match_locked(num) else [],
-                "mi_pronostico": next((p for p in query("SELECT * FROM pronosticos WHERE match_numero = %s AND username = %s", (num, user["username"]))), None),
+                "resultado": r, **extras,
             })
         match_list.sort(key=lambda x: (x["fecha"], x["numero"]))
 
-    # Get user names for display
-    from data import USERS
-    user_names = {u: d["nombre"] for u, d in USERS.items()}
-
     return templates.TemplateResponse("matches.html", {
-        "request": request,
-        "user": user,
-        "matches": match_list,
-        "phases": PHASES,
-        "current_phase": phase,
-        "is_grupos": phase == "Grupos",
+        "request": request, "user": user,
+        "matches": match_list, "phases": PHASES,
+        "current_phase": phase, "is_grupos": phase == "Grupos",
         "user_names": user_names,
     })
 
@@ -207,10 +193,8 @@ async def api_check(request: Request):
         return RedirectResponse("/login", status_code=302)
     api_key = os.environ.get("FOOTBALL_API_KEY", "")
     async with httpx.AsyncClient(timeout=10) as client:
-        r2 = await client.get(
-            "https://api.football-data.org/v4/competitions/WC/matches",
-            headers={"X-Auth-Token": api_key},
-        )
+        r2 = await client.get("https://api.football-data.org/v4/competitions/WC/matches",
+                              headers={"X-Auth-Token": api_key})
         return JSONResponse({"status": r2.status_code, "preview": r2.text[:800]})
 
 
@@ -219,10 +203,8 @@ async def _sync_results():
     if not api_key:
         return
     async with httpx.AsyncClient(timeout=8) as client:
-        resp = await client.get(
-            "https://api.football-data.org/v4/competitions/WC/matches",
-            headers={"X-Auth-Token": api_key},
-        )
+        resp = await client.get("https://api.football-data.org/v4/competitions/WC/matches",
+                                headers={"X-Auth-Token": api_key})
         if resp.status_code != 200:
             return
         data = resp.json()
@@ -266,8 +248,7 @@ async def _sync_results():
             elif winner == "AWAY_TEAM": avanza = "visitante"
 
             execute("""
-                INSERT INTO results
-                    (match_numero, fase, local, visitante, goles_local, goles_visitante,
+                INSERT INTO results (match_numero, fase, local, visitante, goles_local, goles_visitante,
                      avanza, pts_local, pts_visitante)
                 VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
                 ON CONFLICT (match_numero) DO UPDATE SET
