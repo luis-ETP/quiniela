@@ -52,16 +52,7 @@ async def matches_page(request: Request, phase: str = "Grupos"):
     if not user:
         return RedirectResponse("/login", status_code=302)
 
-    # Sync at most every 5 minutes
-    import time
-    now = time.time()
-    last_sync = _sync_results.__dict__.get("_last_sync", 0)
-    if now - last_sync > 300:
-        try:
-            await _sync_results()
-            _sync_results._last_sync = now
-        except Exception:
-            pass
+    # Auto-sync removed - use /admin/sync-results manually
 
     # ── Batch load everything once ────────────────────────────────────────────
     results = query("SELECT * FROM results ORDER BY match_numero")
