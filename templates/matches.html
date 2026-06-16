@@ -7,6 +7,18 @@
   <a href="/admin/sync-results" class="btn btn-sm btn-outline-secondary">🔄 Actualizar resultados</a>
 </div>
 
+{% if today_matches %}
+<div class="mb-4">
+  <h5 class="fw-bold mb-3">📅 Partidos de hoy</h5>
+  <div class="row g-2">
+    {% for m in today_matches %}
+    <div class="col-md-6 col-lg-4">{{ match_card(m) }}</div>
+    {% endfor %}
+  </div>
+</div>
+<hr class="mb-3">
+{% endif %}
+
 <ul class="nav nav-tabs mb-3">
   {% for phase in phases %}
   <li class="nav-item">

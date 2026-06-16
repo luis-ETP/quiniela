@@ -170,11 +170,30 @@ async def matches_page(request: Request, phase: str = "Grupos"):
             })
         match_list.sort(key=lambda x: (x["fecha"], x["numero"]))
 
+    # Today's matches across all groups
+    from datetime import date
+    import pytz
+    today = date.today().strftime("%Y-%m-%d")
+    today_matches = []
+    for m in sorted(MATCHES_BY_NUM.values(), key=lambda x: (KICKOFF_CDMX.get(x["numero"], "99:99"), x["numero"])):
+        if m["fecha"] != today:
+            continue
+        r = results_by_num.get(m["numero"])
+        extras = build_match_extras(m["numero"], m["local"], m["visitante"], r)
+        mc = {**m, "resultado": r,
+              "flag_local": flag_url(m["local"]),
+              "flag_visitante": flag_url(m["visitante"]),
+              "current_username": user["username"],
+              **extras}
+        today_matches.append(mc)
+
     return templates.TemplateResponse("matches.html", {
         "request": request, "user": user,
         "matches": match_list, "phases": PHASES,
         "current_phase": phase, "is_grupos": phase == "Grupos",
         "user_names": user_names,
+        "today_matches": today_matches,
+        "today": today,
     })
 
 
