@@ -69,6 +69,8 @@ async def save_pronostico(
     # Redirect back to correct phase
     from data import MATCHES_BY_NUM
     fase = MATCHES_BY_NUM.get(match_num, {}).get("fase", "Grupos")
+    import asyncio
+    await asyncio.sleep(0.5)  # Wait for DB to commit
     return RedirectResponse(f"/matches?phase={fase}", status_code=302)
 
 
