@@ -95,7 +95,10 @@ async def matches_page(request: Request, phase: str = "Grupos"):
                                r["goles_local"], r["goles_visitante"])
                 p["puntos_bonus"] = b
 
-        mi_pro = next((p for p in match_pros if p["username"] == user["username"]), None)
+        # Direct query for user pronostico to avoid caching issues
+        user_pros = query("SELECT * FROM pronosticos WHERE match_numero = %s AND username = %s", 
+                         (num, user["username"]))
+        mi_pro = user_pros[0] if user_pros else None
         pronosticos = match_pros if locked else []
 
         return {
