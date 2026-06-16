@@ -147,6 +147,7 @@ async def matches_page(request: Request, phase: str = "Grupos"):
             mc = {**m, "resultado": r,
                   "flag_local": flag_url(m["local"]),
                   "flag_visitante": flag_url(m["visitante"]),
+                  "current_username": user["username"],
                   **extras}
             match_list.append(mc)
     else:
@@ -165,7 +166,7 @@ async def matches_page(request: Request, phase: str = "Grupos"):
                 "es_fixture": not bool(r),
                 "flag_local": flag_url(local_name) if local_name else "",
                 "flag_visitante": flag_url(vis_name) if vis_name else "",
-                "resultado": r, **extras,
+                "resultado": r, "current_username": user["username"], **extras,
             })
         match_list.sort(key=lambda x: (x["fecha"], x["numero"]))
 
