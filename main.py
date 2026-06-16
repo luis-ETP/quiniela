@@ -7,6 +7,7 @@ from routers import auth, draft, standings, matches
 from routers.my_teams import router as my_teams_router
 from routers.bracket import router as bracket_router
 from routers.pronosticos import router as pronosticos_router
+from routers.reglas import router as reglas_router
 
 app = FastAPI(title="Quiniela Mundial 2026")
 
@@ -29,3 +30,4 @@ app.include_router(matches.router)
 app.include_router(my_teams_router)
 app.include_router(bracket_router)
 app.include_router(pronosticos_router)
+app.include_router(reglas_router)
