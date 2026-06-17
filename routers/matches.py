@@ -97,9 +97,9 @@ async def matches_page(request: Request, phase: str = "Grupos"):
                 p["puntos_bonus"] = b
 
         mi_pro = next((p for p in match_pros if p["username"] == user["username"]), None)
-        if str(num) == "28":
+        if str(num) in ["23", "28"]:
             import sys
-            print(f"DEBUG match28: user={user['username']} match_pros={match_pros} mi_pro={mi_pro} pros_keys={list(pros_by_match.keys())[:5]}", file=sys.stderr, flush=True)
+            print(f"DEBUG match{num}: locked={locked} match_pros_count={len(match_pros)} mi_pro={mi_pro is not None} pros_keys_sample={list(pros_by_match.keys())[:5]}", file=sys.stderr, flush=True)
         pronosticos = match_pros if locked else []
 
         return {
