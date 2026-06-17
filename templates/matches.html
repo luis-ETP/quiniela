@@ -75,7 +75,7 @@
 
     <!-- Pronostico -->
     <div class="mt-2 pt-2 border-top">
-      {% if not locked %}
+      {% if not m.locked %}
         <!-- Before kickoff: show form -->
         {% if m.mi_pronostico %}
         <!-- Already has pronostico - show in green with change button -->
@@ -106,7 +106,7 @@
           <button class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size:0.7rem">Pronosticar</button>
         </form>
         {% endif %}
-      {% elif locked %}
+      {% elif m.locked %}
         <!-- After kickoff: show collapsible -->
         <div>
           <!-- My result -->
@@ -125,14 +125,14 @@
           <div style="font-size:0.72rem" class="text-muted">🔮 No pronosticaste</div>
           {% endif %}
           <!-- Expandable others -->
-          {% if pronosticos %}
+          {% if m.pronosticos %}
           <div>
             <button class="btn btn-link p-0 mt-1" style="font-size:0.65rem;color:#999"
                     onclick="this.nextElementSibling.classList.toggle('d-none');this.textContent=this.textContent.includes('Ver')? 'Ocultar pronósticos':'Ver todos los pronósticos'">
               Ver todos los pronósticos
             </button>
             <div class="d-none mt-1">
-              {% for p in pronosticos %}
+              {% for p in m.pronosticos %}
               {% if p.username != m.current_username %}
               <div class="d-flex justify-content-between" style="font-size:0.68rem">
                 <span class="text-muted">{{ user_names.get(p.username, p.username) }}: {{ p.goles_local }}-{{ p.goles_visitante }}</span>
