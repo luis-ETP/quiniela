@@ -278,6 +278,16 @@ async def _sync_results():
                     pts_visitante=EXCLUDED.pts_visitante
             """, (match_num, fase, home, away, gl, gv, avanza, pts_local, pts_visitante))
 
+            # Update bonus for all pronosticos of this match
+            if finished and gl is not None and gv is not None:
+                from routers.pronosticos import calc_bonus
+                pros = query("SELECT * FROM pronosticos WHERE match_numero = %s", (match_num,))
+                for p in pros:
+                    bonus = calc_bonus(p["goles_local"], p["goles_visitante"], gl, gv)
+                    if bonus is not None:
+                        execute("UPDATE pronosticos SET puntos_bonus = %s WHERE id = %s",
+                               (bonus, p["id"]))
+
 
 @router.get("/debug/pronostico/{match_num}")
 async def debug_pronostico(request: Request, match_num: int):
