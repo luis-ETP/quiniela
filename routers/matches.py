@@ -222,11 +222,28 @@ async def _sync_results():
     api_key = os.environ.get("FOOTBALL_API_KEY", "")
     if not api_key:
         return
+
+    # Only fetch todays matches to minimize API calls
+    import pytz
+    today = datetime.now(pytz.timezone("America/Mexico_City")).strftime("%Y-%m-%d")
+
+    # Get match numbers already in results for today
+    existing = {r["match_numero"] for r in query(
+        "SELECT match_numero FROM results WHERE match_numero = ANY(%s)",
+        ([m["numero"] for m in MATCHES_BY_NUM.values() if m["fecha"] == today],)
+    )}
+
     async with httpx.AsyncClient(timeout=8) as client:
-        resp = await client.get("https://api.football-data.org/v4/competitions/WC/matches",
-                                headers={"X-Auth-Token": api_key})
+        resp = await client.get(
+            f"https://api.football-data.org/v4/competitions/WC/matches?dateFrom={today}&dateTo={today}",
+            headers={"X-Auth-Token": api_key}
+        )
         if resp.status_code != 200:
-            return
+            # Fallback to all matches
+            resp = await client.get("https://api.football-data.org/v4/competitions/WC/matches",
+                                    headers={"X-Auth-Token": api_key})
+            if resp.status_code != 200:
+                return
         data = resp.json()
         for m in data.get("matches", []):
             if m["status"] != "FINISHED":
