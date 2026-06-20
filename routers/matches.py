@@ -226,9 +226,12 @@ async def _sync_results():
     # Get existing results to skip already processed matches
     existing = {r["match_numero"] for r in query("SELECT match_numero FROM results")}
 
+    import pytz
+    today = datetime.now(pytz.timezone("America/Mexico_City")).strftime("%Y-%m-%d")
+
     async with httpx.AsyncClient(timeout=15) as client:
         resp = await client.get(
-            "https://api.football-data.org/v4/competitions/WC/matches",
+            f"https://api.football-data.org/v4/competitions/WC/matches?dateFrom={today}&dateTo={today}",
             headers={"X-Auth-Token": api_key}
         )
         if resp.status_code != 200:
