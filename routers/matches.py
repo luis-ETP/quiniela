@@ -170,10 +170,11 @@ async def matches_page(request: Request, phase: str = "Grupos"):
             })
         match_list.sort(key=lambda x: (x["fecha"], x["numero"]))
 
-    # Today's matches across all groups
+    # Today's matches - groups + knockout
     import pytz
     today = datetime.now(pytz.timezone("America/Mexico_City")).strftime("%Y-%m-%d")
     today_matches = []
+
     for m in sorted(MATCHES_BY_NUM.values(), key=lambda x: (KICKOFF_CDMX.get(x["numero"], "99:99"), x["numero"])):
         if m["fecha"] != today:
             continue
@@ -185,6 +186,25 @@ async def matches_page(request: Request, phase: str = "Grupos"):
               "current_username": user["username"],
               **extras}
         today_matches.append(mc)
+
+    for num, fecha, fase, pos1, pos2 in KNOCKOUT_FIXTURE:
+        if fecha != today:
+            continue
+        r = results_by_num.get(num)
+        local_name = r["local"] if r else None
+        vis_name = r["visitante"] if r else None
+        extras = build_match_extras(num, local_name or "", vis_name or "", r)
+        today_matches.append({
+            "numero": num, "fecha": fecha, "fase": fase, "grupo": "",
+            "local": local_name or pos1, "visitante": vis_name or pos2,
+            "es_fixture": not bool(r),
+            "flag_local": flag_url(local_name) if local_name else "",
+            "flag_visitante": flag_url(vis_name) if vis_name else "",
+            "resultado": r, "current_username": user["username"],
+            **extras,
+        })
+
+    today_matches.sort(key=lambda x: KICKOFF_CDMX.get(x["numero"], "99:99"))
 
     return templates.TemplateResponse("matches.html", {
         "request": request, "user": user,
