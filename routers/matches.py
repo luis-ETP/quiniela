@@ -257,7 +257,14 @@ async def _sync_results():
                 if match["local"] == home and match["visitante"] == away:
                     match_num = num
                     break
-
+            else:
+                existing = query(
+                    "SELECT match_numero FROM results WHERE local = %s AND visitante = %s",
+                    (home, away)
+                )
+                if existing:
+                    match_num = existing[0]["match_numero"]
+                    
             local_team = TEAMS.get(home)
             away_team = TEAMS.get(away)
             pts_local = pts_visitante = 0.0
