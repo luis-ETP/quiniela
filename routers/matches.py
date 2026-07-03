@@ -203,6 +203,47 @@ async def matches_page(request: Request, phase: str = "Grupos"):
 
     today_matches.sort(key=lambda x: KICKOFF_CDMX.get(x["numero"], "99:99"))
 
+    # Build bracket pairs for knockout phases
+    BRACKET_MAP = {
+        "Ronda de 32": {89: [74,77], 90: [73,75], 91: [76,78], 92: [79,80],
+                        93: [82,83], 94: [81,84], 95: [86,88], 96: [85,87]},
+        "Octavos":     {97: [89,90], 98: [93,94], 99: [91,92], 100: [95,96]},
+        "Cuartos":     {101: [97,98], 102: [99,100]},
+        "Semifinal":   {104: [101,102]},
+    }
+
+    bracket_pairs = []
+    if phase in BRACKET_MAP:
+        matches_by_num_local = {m["numero"]: m for m in match_list}
+        next_phases = {"Ronda de 32": "Octavos", "Octavos": "Cuartos",
+                      "Cuartos": "Semifinal", "Semifinal": "Final"}
+        next_phase = next_phases.get(phase)
+        next_phase_matches = {}
+        if next_phase:
+            for num, fecha, fase, pos1, pos2 in KNOCKOUT_FIXTURE:
+                if fase != next_phase:
+                    continue
+                r = results_by_num.get(num)
+                local_name = r["local"] if r else None
+                vis_name = r["visitante"] if r else None
+                next_phase_matches[num] = {
+                    "numero": num, "fecha": fecha, "fase": fase, "grupo": "",
+                    "local": local_name or pos1, "visitante": vis_name or pos2,
+                    "es_fixture": not bool(r),
+                    "flag_local": flag_url(local_name) if local_name else "",
+                    "flag_visitante": flag_url(vis_name) if vis_name else "",
+                    "resultado": r,
+                    "current_username": user["username"],
+                    "locked": is_match_locked(num),
+                    "kickoff": KICKOFF_CDMX.get(num, ""),
+                    "owner_local": None, "owner_visitante": None,
+                    "duelo": None, "mi_pronostico": None, "pronosticos": [],
+                }
+        for next_num, prev_nums in sorted(BRACKET_MAP[phase].items()):
+            left = [matches_by_num_local[n] for n in prev_nums if n in matches_by_num_local]
+            right = next_phase_matches.get(next_num)
+            bracket_pairs.append({"left": left, "right": right})
+
     return templates.TemplateResponse("matches.html", {
         "request": request, "user": user,
         "matches": match_list, "phases": PHASES,
@@ -210,7 +251,7 @@ async def matches_page(request: Request, phase: str = "Grupos"):
         "user_names": user_names,
         "today_matches": today_matches,
         "today": today,
-        "bracket_pairs": [],
+        "bracket_pairs": bracket_pairs,
     })
 
 
