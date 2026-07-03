@@ -229,7 +229,37 @@
 {% endfor %}
 
 {% else %}
-{% if matches %}
+{% if bracket_pairs %}
+<div>
+  {% for pair in bracket_pairs %}
+  <div class="mb-5">
+    <div class="row g-2 align-items-stretch">
+      <div class="col-md-5">
+        <div class="d-flex flex-column gap-3">
+          {% for m in pair.left %}
+          <div>{{ match_card(m) }}</div>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="col-md-1 d-none d-md-flex align-items-center justify-content-center">
+        <div style="display:flex;flex-direction:column;align-items:center;height:100%;">
+          <div style="flex:1;border-right:2px solid #dee2e6;"></div>
+          <div style="width:100%;border-top:2px solid #dee2e6;"></div>
+          <div style="flex:1;border-right:2px solid #dee2e6;"></div>
+        </div>
+      </div>
+      <div class="col-md-6 d-flex align-items-center">
+        {% if pair.right %}
+        <div class="w-100">{{ match_card(pair.right) }}</div>
+        {% else %}
+        <div class="w-100 p-3 text-center text-muted border rounded" style="font-size:0.8rem;border-style:dashed!important;">Pendiente</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% elif matches %}
 <div class="row g-3">
 {% for m in matches %}
   <div class="col-md-6 col-lg-4">{{ match_card(m) }}</div>
