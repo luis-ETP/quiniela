@@ -73,8 +73,8 @@ async def matches_page(request: Request, phase: str = "Grupos"):
 
     def build_match_extras(num, local, visitante, r):
         locked = is_match_locked(num)
-        owner_local = owners.get(local)
-        owner_visitante = owners.get(visitante)
+        owner_local = owners.get(local) if local else None
+        owner_visitante = owners.get(visitante) if visitante else None
 
         # Duelo
         duelo = None
@@ -155,13 +155,7 @@ async def matches_page(request: Request, phase: str = "Grupos"):
             r = results_by_num.get(num)
             local_name = r["local"] if r else None
             vis_name = r["visitante"] if r else None
-            try:
-                extras = build_match_extras(num, local_name or "", vis_name or "", r)
-            except Exception as e:
-                import sys, traceback
-                print(f"ERROR in build_match_extras for match {num}: {e}", file=sys.stderr)
-                traceback.print_exc(file=sys.stderr)
-                raise
+            extras = build_match_extras(num, local_name or "", vis_name or "", r)
             match_list.append({
                 "numero": num, "fecha": fecha, "fase": fase, "grupo": "",
                 "local": local_name or pos1, "visitante": vis_name or pos2,
