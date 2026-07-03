@@ -242,7 +242,7 @@ async def _sync_results():
         return
 
     # Get existing results to skip already processed matches
-    existing = {r["match_numero"] for r in query("SELECT match_numero FROM results")}
+    existing_results = {r["match_numero"] for r in query("SELECT match_numero FROM results")}
 
     from datetime import timedelta
     import pytz
@@ -276,12 +276,12 @@ async def _sync_results():
                     match_num = num
                     break
             else:
-                existing = query(
+                found = query(
                     "SELECT match_numero FROM results WHERE local = %s AND visitante = %s",
                     (home, away)
                 )
-                if existing:
-                    match_num = existing[0]["match_numero"]
+                if found:
+                    match_num = found[0]["match_numero"]
                     
             local_team = TEAMS.get(home)
             away_team = TEAMS.get(away)
