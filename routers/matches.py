@@ -117,12 +117,6 @@ async def matches_page(request: Request, phase: str = "Grupos"):
     if not user:
         return RedirectResponse("/login", status_code=302)
 
-    # Propagate bracket results automatically
-    try:
-        propagate_bracket()
-    except Exception:
-        pass
-
     # ── Batch load everything once ────────────────────────────────────────────
     results = query("SELECT * FROM results ORDER BY match_numero")
     results_by_num = {r["match_numero"]: r for r in results}
@@ -330,6 +324,7 @@ async def sync_results_get(request: Request, phase: str = "Grupos"):
     if not user:
         return RedirectResponse("/login", status_code=302)
     await _sync_results()
+    propagate_bracket()
     return RedirectResponse(f"/matches?phase={phase}", status_code=302)
 
 
