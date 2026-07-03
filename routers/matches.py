@@ -357,6 +357,29 @@ async def _sync_results():
             if winner == "HOME_TEAM": avanza = "local"
             elif winner == "AWAY_TEAM": avanza = "visitante"
 
+            # For knockout matches with API id, find our match number by date+stage
+            if match_num == m["id"] and fase != "Grupos":
+                utc_date = m.get("utcDate", "")[:10]  # YYYY-MM-DD UTC
+                stage = m.get("stage", "")
+                # Find unassigned knockout slot matching this stage
+                from data import KNOCKOUT_FIXTURE as KF
+                stage_to_fase = {"ROUND_OF_32": "Ronda de 32", "ROUND_OF_16": "Octavos",
+                                 "QUARTER_FINALS": "Cuartos", "SEMI_FINALS": "Semifinal",
+                                 "THIRD_PLACE": "Tercer lugar", "FINAL": "Final"}
+                target_fase = stage_to_fase.get(stage, fase)
+                for knum, kfecha, kfase, kpos1, kpos2 in KF:
+                    if kfase != target_fase:
+                        continue
+                    existing_r = query("SELECT match_numero FROM results WHERE match_numero = %s", (knum,))
+                    if not existing_r:
+                        match_num = knum
+                        break
+                    # Or if it already has this match with these teams
+                    existing_r2 = query("SELECT match_numero FROM results WHERE match_numero = %s AND local = %s AND visitante = %s", (knum, home, away))
+                    if existing_r2:
+                        match_num = knum
+                        break
+
             execute("""
                 INSERT INTO results (match_numero, fase, local, visitante, goles_local, goles_visitante,
                      avanza, pts_local, pts_visitante)
