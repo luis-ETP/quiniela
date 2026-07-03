@@ -312,17 +312,29 @@ async def _sync_results():
             winner = m["score"].get("winner") if finished else None
 
             match_num = m["id"]
+            # Search group stage matches
             for num, match in MATCHES_BY_NUM.items():
                 if match["local"] == home and match["visitante"] == away:
                     match_num = num
                     break
             else:
-                found = query(
-                    "SELECT match_numero FROM results WHERE local = %s AND visitante = %s",
-                    (home, away)
-                )
-                if found:
-                    match_num = found[0]["match_numero"]
+                # Search knockout fixture by team names
+                found_ko = False
+                for num, fecha, fase, pos1, pos2 in KNOCKOUT_FIXTURE:
+                    # Check results table for this knockout match
+                    ko_result = query("SELECT match_numero, local, visitante FROM results WHERE match_numero = %s", (num,))
+                    if ko_result and ko_result[0]["local"] == home and ko_result[0]["visitante"] == away:
+                        match_num = num
+                        found_ko = True
+                        break
+                if not found_ko:
+                    # Try by team names in results table
+                    found = query(
+                        "SELECT match_numero FROM results WHERE local = %s AND visitante = %s",
+                        (home, away)
+                    )
+                    if found:
+                        match_num = found[0]["match_numero"]
                     
             local_team = TEAMS.get(home)
             away_team = TEAMS.get(away)
