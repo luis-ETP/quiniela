@@ -155,7 +155,13 @@ async def matches_page(request: Request, phase: str = "Grupos"):
             r = results_by_num.get(num)
             local_name = r["local"] if r else None
             vis_name = r["visitante"] if r else None
-            extras = build_match_extras(num, local_name or "", vis_name or "", r)
+            try:
+                extras = build_match_extras(num, local_name or "", vis_name or "", r)
+            except Exception as e:
+                import sys, traceback
+                print(f"ERROR in build_match_extras for match {num}: {e}", file=sys.stderr)
+                traceback.print_exc(file=sys.stderr)
+                raise
             match_list.append({
                 "numero": num, "fecha": fecha, "fase": fase, "grupo": "",
                 "local": local_name or pos1, "visitante": vis_name or pos2,
