@@ -46,13 +46,82 @@ def update_duelo_winner(match_num, avanza, owner_local, owner_visitante):
     if winner:
         execute("UPDATE duelos SET ganador_username = %s WHERE match_numero = %s", (winner, match_num))
 
+
+def propagate_bracket():
+    """Calculate next round matches from completed results."""
+    # Maps: next_round_match -> [prev_match1, prev_match2]
+    # For 3rd place (103), use losers of 101 and 102
+    NEXT_ROUND = {
+        90: [73, 75], 89: [74, 77], 91: [76, 78], 92: [79, 80],
+        93: [82, 83], 94: [81, 84], 95: [86, 88], 96: [85, 87],
+        97: [89, 90], 98: [93, 94], 99: [91, 92], 100: [95, 96],
+        101: [97, 98], 102: [99, 100],
+        104: [101, 102],
+    }
+    THIRD_PLACE_FEEDERS = [101, 102]  # losers go to match 103
+
+    results = {r["match_numero"]: r for r in query("SELECT * FROM results")}
+
+    for next_num, prev_nums in NEXT_ROUND.items():
+        # Check if both previous matches have results
+        prev1 = results.get(prev_nums[0])
+        prev2 = results.get(prev_nums[1])
+        if not prev1 or not prev2:
+            continue
+        if prev1.get("avanza") is None or prev2.get("avanza") is None:
+            continue
+
+        # Get winners
+        def get_winner(r):
+            return r["local"] if r["avanza"] == "local" else r["visitante"]
+
+        team1 = get_winner(prev1)
+        team2 = get_winner(prev2)
+
+        # Find kickoff for this match
+        from data import KICKOFF_CDMX, KNOCKOUT_FIXTURE
+        fecha = next((f for n,f,fa,p1,p2 in KNOCKOUT_FIXTURE if n == next_num), "")
+        fase = next((fa for n,f,fa,p1,p2 in KNOCKOUT_FIXTURE if n == next_num), "Octavos")
+
+        # Upsert into results (without score - just teams)
+        existing = query("SELECT match_numero FROM results WHERE match_numero = %s", (next_num,))
+        if not existing:
+            execute("""INSERT INTO results (match_numero, fase, local, visitante, pts_local, pts_visitante)
+                VALUES (%s, %s, %s, %s, 0, 0) ON CONFLICT (match_numero) DO NOTHING""",
+                (next_num, fase, team1, team2))
+        else:
+            # Update teams if not yet set correctly
+            execute("""UPDATE results SET local = %s, visitante = %s 
+                WHERE match_numero = %s AND (local != %s OR visitante != %s)""",
+                (team1, team2, next_num, team1, team2))
+
+    # 3rd place match: losers of semifinals
+    sf1 = results.get(101)
+    sf2 = results.get(102)
+    if sf1 and sf2 and sf1.get("avanza") and sf2.get("avanza"):
+        def get_loser(r):
+            return r["visitante"] if r["avanza"] == "local" else r["local"]
+        team1 = get_loser(sf1)
+        team2 = get_loser(sf2)
+        existing = query("SELECT match_numero FROM results WHERE match_numero = 103", ())
+        if not existing:
+            execute("INSERT INTO results (match_numero, fase, local, visitante, pts_local, pts_visitante) VALUES (103, 'Tercer lugar', %s, %s, 0, 0) ON CONFLICT DO NOTHING",
+                (team1, team2))
+        else:
+            execute("UPDATE results SET local = %s, visitante = %s WHERE match_numero = 103",
+                (team1, team2))
+
 @router.get("/matches", response_class=HTMLResponse)
 async def matches_page(request: Request, phase: str = "Grupos"):
     user = get_current_user(request)
     if not user:
         return RedirectResponse("/login", status_code=302)
 
-    # Auto-sync removed - use /admin/sync-results manually
+    # Propagate bracket results automatically
+    try:
+        propagate_bracket()
+    except Exception:
+        pass
 
     # ── Batch load everything once ────────────────────────────────────────────
     results = query("SELECT * FROM results ORDER BY match_numero")
