@@ -97,9 +97,6 @@ async def matches_page(request: Request, phase: str = "Grupos"):
                 p["puntos_bonus"] = b
 
         mi_pro = next((p for p in match_pros if p["username"] == user["username"]), None)
-        if str(num) in ["23", "28"]:
-            import sys
-            print(f"DEBUG match{num}: locked={locked} match_pros_count={len(match_pros)} mi_pro={mi_pro is not None} pros_keys_sample={list(pros_by_match.keys())[:5]}", file=sys.stderr, flush=True)
         pronosticos = match_pros if locked else []
 
         return {
@@ -207,8 +204,7 @@ async def matches_page(request: Request, phase: str = "Grupos"):
     today_matches.sort(key=lambda x: KICKOFF_CDMX.get(x["numero"], "99:99"))
 
     # Build bracket pairs for knockout phases
-    try:
-     BRACKET_MAP = {
+    BRACKET_MAP = {
         "Ronda de 32": {89: [74,77], 90: [73,75], 91: [76,78], 92: [79,80],
                         93: [82,83], 94: [81,84], 95: [86,88], 96: [85,87]},
         "Octavos":     {97: [89,90], 98: [93,94], 99: [91,92], 100: [95,96]},
@@ -244,10 +240,6 @@ async def matches_page(request: Request, phase: str = "Grupos"):
             left = [matches_by_num[n] for n in prev_nums if n in matches_by_num]
             right = next_phase_matches.get(next_num)
             bracket_pairs.append({"left": left, "right": right})
-    except Exception as e:
-        import sys
-        print(f"BRACKET ERROR: {e}", file=sys.stderr, flush=True)
-        bracket_pairs = []
 
     return templates.TemplateResponse("matches.html", {
         "request": request, "user": user,
