@@ -117,7 +117,7 @@ async def matches_page(request: Request, phase: str = "Grupos"):
     if not user:
         return RedirectResponse("/login", status_code=302)
 
-    # ── Batch load everything once ────────────────────────────────────────────
+    # ── Batch load everything once - propagate bracket from cached results later ────────────────────────────────────────────
     results = query("SELECT * FROM results ORDER BY match_numero")
     results_by_num = {r["match_numero"]: r for r in results}
 
@@ -133,6 +133,50 @@ async def matches_page(request: Request, phase: str = "Grupos"):
 
     from data import USERS
     user_names = {u: d["nombre"] for u, d in USERS.items()}
+
+    # Propagate bracket using already-loaded results (no extra queries)
+    NEXT_ROUND = {
+        90:[73,75], 89:[74,77], 91:[76,78], 92:[79,80],
+        93:[82,83], 94:[81,84], 95:[86,88], 96:[85,87],
+        97:[89,90], 98:[93,94], 99:[91,92], 100:[95,96],
+        101:[97,98], 102:[99,100], 104:[101,102],
+    }
+    for next_num, prev_nums in NEXT_ROUND.items():
+        prev1 = results_by_num.get(prev_nums[0])
+        prev2 = results_by_num.get(prev_nums[1])
+        if not prev1 or not prev2:
+            continue
+        if not prev1.get("avanza") or not prev2.get("avanza"):
+            continue
+        team1 = prev1["local"] if prev1["avanza"] == "local" else prev1["visitante"]
+        team2 = prev2["local"] if prev2["avanza"] == "local" else prev2["visitante"]
+        existing = results_by_num.get(next_num)
+        if not existing:
+            from data import KNOCKOUT_FIXTURE as KF
+            fase = next((fa for n,f,fa,p1,p2 in KF if n == next_num), "Octavos")
+            execute("INSERT INTO results (match_numero, fase, local, visitante, pts_local, pts_visitante) VALUES (%s,%s,%s,%s,0,0) ON CONFLICT (match_numero) DO NOTHING",
+                (next_num, fase, team1, team2))
+            results_by_num[next_num] = {"match_numero": next_num, "fase": fase,
+                "local": team1, "visitante": team2, "goles_local": None,
+                "goles_visitante": None, "avanza": None, "pts_local": 0, "pts_visitante": 0}
+        elif existing.get("local") != team1 or existing.get("visitante") != team2:
+            if existing.get("goles_local") is None:
+                execute("UPDATE results SET local=%s, visitante=%s WHERE match_numero=%s",
+                    (team1, team2, next_num))
+                existing["local"] = team1
+                existing["visitante"] = team2
+    # 3rd place
+    sf1 = results_by_num.get(101)
+    sf2 = results_by_num.get(102)
+    if sf1 and sf2 and sf1.get("avanza") and sf2.get("avanza"):
+        loser1 = sf1["visitante"] if sf1["avanza"] == "local" else sf1["local"]
+        loser2 = sf2["visitante"] if sf2["avanza"] == "local" else sf2["local"]
+        e103 = results_by_num.get(103)
+        if not e103:
+            execute("INSERT INTO results (match_numero, fase, local, visitante, pts_local, pts_visitante) VALUES (103,'Tercer lugar',%s,%s,0,0) ON CONFLICT DO NOTHING",
+                (loser1, loser2))
+        elif e103.get("goles_local") is None:
+            execute("UPDATE results SET local=%s, visitante=%s WHERE match_numero=103", (loser1, loser2))
 
     def build_match_extras(num, local, visitante, r):
         locked = is_match_locked(num)
