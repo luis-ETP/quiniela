@@ -137,7 +137,7 @@ async def matches_page(request: Request, phase: str = "Grupos"):
     # Propagate bracket using already-loaded results (no extra queries)
     NEXT_ROUND = {
         90:[73,75], 89:[74,77], 91:[76,78], 92:[79,80],
-        93:[82,83], 94:[81,84], 95:[86,88], 96:[85,87],
+        93:[83,84], 94:[81,82], 95:[86,88], 96:[85,87],
         97:[89,90], 98:[93,94], 99:[91,92], 100:[95,96],
         101:[97,98], 102:[99,100], 104:[101,102],
     }
