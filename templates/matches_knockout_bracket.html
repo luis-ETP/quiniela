@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}Partidos — Quiniela 2026{% endblock %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="fw-bold mb-0">📋 Partidos</h4>
+  <a href="/admin/sync-results" class="btn btn-sm btn-outline-secondary">🔄 Actualizar resultados</a>
+</div>
+
+<ul class="nav nav-tabs mb-3">
+  {% for phase in phases %}
+  <li class="nav-item">
+    <a class="nav-link {% if phase == current_phase %}active fw-bold{% endif %}"
+       href="/matches?phase={{ phase }}">{{ phase }}</a>
+  </li>
+  {% endfor %}
+</ul>
+
+{% if today_matches %}
+<h5 class="fw-bold mb-3">📅 Partidos de hoy</h5>
+<div class="row g-2 mb-4">
+  {% for m in today_matches %}
+  <div class="col-md-6 col-lg-4">{{ match_card(m) }}</div>
+  {% endfor %}
+</div>
+<hr class="mb-4">
+{% endif %}
+
+{% if is_grupos %}
+{% set grupos = ["A","B","C","D","E","F","G","H","I","J","K","L"] %}
+{% for grupo in grupos %}
+  {% set grupo_matches = matches | selectattr("grupo", "equalto", grupo) | list %}
+  {% if grupo_matches %}
+  <div class="mb-4">
+    <h6 class="fw-bold text-uppercase text-muted mb-2">Grupo {{ grupo }}</h6>
+    <div class="row g-2">
+    {% for m in grupo_matches %}
+      <div class="col-md-6 col-lg-4">{{ match_card(m) }}</div>
+    {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+{% endfor %}
+
+{% else %}
+<!-- Bracket layout for knockout rounds -->
+{% if bracket_pairs %}
+<div class="bracket-container">
+  {% for pair in bracket_pairs %}
+  <div class="bracket-pair mb-4">
+    <div class="row g-2 align-items-stretch">
+      <!-- Left: two R32/R16 matches -->
+      <div class="col-5">
+        <div class="h-100 d-flex flex-column gap-2">
+          {% for m in pair.left %}
+          <div class="flex-grow-1">{{ match_card(m) }}</div>
+          {% endfor %}
+        </div>
+      </div>
+      <!-- Connector -->
+      <div class="col-1 d-flex align-items-center justify-content-center position-relative">
+        <div class="bracket-line"></div>
+      </div>
+      <!-- Right: next round match -->
+      <div class="col-6 d-flex align-items-center">
+        {% if pair.right %}
+        <div class="w-100">{{ match_card(pair.right) }}</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{% elif matches %}
+<div class="row g-3">
+{% for m in matches %}
+  <div class="col-md-6 col-lg-4">{{ match_card(m) }}</div>
+{% endfor %}
+</div>
+{% else %}
+<div class="alert alert-info mt-3">No hay partidos en esta fase todavía.</div>
+{% endif %}
+{% endif %}
+
+<style>
+.bracket-line {
+  width: 2px;
+  height: 100%;
+  background: var(--bs-border-color);
+  position: relative;
+}
+.bracket-line::before,
+.bracket-line::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  width: 12px;
+  height: 2px;
+  background: var(--bs-border-color);
+}
+.bracket-line::before { top: 25%; }
+.bracket-line::after { top: 75%; }
+</style>
+
+{% endblock %}
